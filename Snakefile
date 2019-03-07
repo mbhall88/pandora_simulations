@@ -17,7 +17,7 @@ def mutate(base):
 rule all:
     input:
         expand(
-            "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora.genotyped.fa",
+            "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora.genotyped.fa",
             sample=config["sample"]
             ),
         # expand(
@@ -194,9 +194,95 @@ rule map_with_discovery:
         """
 
 
+"""
+Add the de novo paths to the original multiple sequence alignment fasta file.
+"""
+rule add_denovo_to_msa:
+    input:
+        denovo_dir = "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/denovo_paths",
+        msa = "analysis/{sample}/{sample}.msa.fa",
+    output: "analysis/{sample}/simulate_perfect/{sample}_with_denovo.fa"
+    log: "logs/add_denovo_to_msa/{sample}.log"
+    run:
+        denovo_paths = list(Path(input.denovo_dir).glob("*.fa"))
+        # append contents of all denovo paths to the msa file
+        with open(output[0], "w") as fout:
+            fout.write(Path(input.msa).read_text())
+            for p in denovo_paths:
+                fout.write(p.read_text())
+
+"""
+Do multiple sequence alignment to align new paths with where they should be
+"""
+rule run_msa:
+    input: "analysis/{sample}/simulate_perfect/{sample}_with_denovo.fa"
+    output: "analysis/{sample}/simulate_perfect/{sample}_with_denovo.msa.fa"
+    log: "logs/run_msa/{sample}.log"
+    shell:
+        """
+        clustalo --infile {input} --outfile {output} -v --force 2> {log}
+        """
+
+
+rule make_denovo_prg:
+    input: "analysis/{sample}/simulate_perfect/{sample}_with_denovo.msa.fa"
+    output:
+        prg = "analysis/{sample}/simulate_perfect/{sample}_with_denovo.prg.fa",
+    params:
+        script = "scripts/make_prg_from_msa.py",
+        prefix = "analysis/{sample}/simulate_perfect/{sample}_with_denovo",
+    log: "logs/make_denovo_prg/{sample}.log"
+    shell:
+        """
+        python3 {params.script} --prefix {params.prefix} {input} 2> {log}
+        mv {params.prefix}.max_nest10.min_match7.prg {output.prg} 2>> {log}
+        echo '>{wildcards.sample}' | cat - {output.prg} > temp && mv temp {output.prg} 2>> {log}
+        echo '' >> {output.prg} 2>> {log}
+        rm summary.tsv 2>> {log}
+        """
+
+
+rule index_denovo_prg:
+    input: "analysis/{sample}/simulate_perfect/{sample}_with_denovo.prg.fa"
+    output: "analysis/{sample}/simulate_perfect/{sample}_with_denovo.prg.fa.k15.w14.idx"
+    params:
+        pandora = config["pandora"],
+    log: "logs/index_denovo_prg/{sample}.log"
+    shell:
+        """
+        {params.pandora} index {input} &> {log}
+        """
+
+
+rule map_with_denovo:
+    input:
+        prg = "analysis/{sample}/simulate_perfect/{sample}_with_denovo.prg.fa",
+        index = "analysis/{sample}/simulate_perfect/{sample}_with_denovo.prg.fa.k15.w14.idx",
+        reads = "analysis/{sample}/simulate_perfect/simulated.fa",
+        ref = "analysis/{sample}/{sample}_random_path_mutated.fa",
+    output:
+        consensus = "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora.consensus.fq.gz",
+        genotype_vcf = "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora_genotyped.vcf",
+    params:
+        pandora = config["pandora"],
+        out_prefix = "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/",
+    log: "logs/map_with_denovo/{sample}.log"
+    shell:
+        """
+        genome_size=$(grep -v '>' {input.ref} | wc | awk '{{print $3-$1-10}}')
+        {params.pandora} map -p {input.prg} \
+            -r {input.reads} \
+            -o {params.out_prefix} \
+            --output_kg \
+            --output_covgs \
+            --output_vcf \
+            --genotype \
+            --genome_size $genome_size &> {log}
+        """
+
 rule consensus_fastq_to_fasta:
-    input: "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora.consensus.fq.gz"
-    output: "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora.consensus.fa"
+    input: "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora.consensus.fq.gz"
+    output: "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora.consensus.fa"
     log: "logs/consensus_fastq_to_fasta/{sample}.log"
     shell: "fastaq to_fasta -l 0 {input} {output} 2> {log}"
 
@@ -209,10 +295,10 @@ the non-bgziped version of the VCF (for `pysam`)
 """
 rule filter_genotype_vcf:
     input:
-        vcf = "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora_genotyped.vcf"
+        vcf = "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora_genotyped.vcf"
     output:
-        vcf = "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora_genotyped.filtered.vcf.gz",
-        index = "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora_genotyped.filtered.vcf.gz.tbi"
+        vcf = "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora_genotyped.filtered.vcf.gz",
+        index = "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora_genotyped.filtered.vcf.gz.tbi"
     params:
         script = "scripts/filter_invalid_vcf_lines.py"
     log: "logs/filter_genotype_vcf/{sample}.log"
@@ -226,16 +312,15 @@ rule filter_genotype_vcf:
         """
 
 
-
 """
 In this step we apply the genotyped VCF variants to the pandora consensus
 fasta file - as this is the reference that the VCF variants is with respect to.
 """
 rule consensus_to_genotype:
     input:
-        vcf = "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora_genotyped.filtered.vcf.gz",
-        ref = "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora.consensus.fa",
-    output: "analysis/{sample}/simulate_perfect/pandora_map_with_discovery/pandora.genotyped.fa"
+        vcf = "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora_genotyped.filtered.vcf.gz",
+        ref = "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora.consensus.fa",
+    output: "analysis/{sample}/simulate_perfect/pandora_map_with_denovo/pandora.genotyped.fa"
     params:
         script = "scripts/apply_vcf.py"
     log: "logs/consensus_to_genotype/{sample}.log"
@@ -244,6 +329,7 @@ rule consensus_to_genotype:
         python3 {params.script} --fasta {input.ref} \
             --vcf {input.vcf} --output {output} 2> {log}
         """
+
 # rule consensus_fastq_to_fasta:
 #     input:
 #     output:
