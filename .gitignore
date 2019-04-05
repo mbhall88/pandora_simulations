@@ -1,4 +1,4 @@
-data/panx
+data/
 .snakemake/
 analysis/
 logs/

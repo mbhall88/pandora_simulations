@@ -1,2 +1,4 @@
-pandora:         "/Users/mbhall88/Projects/pandora/cmake-build-debug/pandora"
-sample:          "GC00003679"
+pandora:  "/Users/mbhall88/Projects/pandora/cmake-build-debug/pandora"
+sample:   "GC00003679"
+num_snps: 2
+perfect: True
