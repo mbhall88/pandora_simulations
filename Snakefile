@@ -44,7 +44,7 @@ output_directories = generate_all_parameter_combination_directories(config)
 
 rule all:
     input:
-        "data/all_gene_alignments/organise_panx_data.complete",
+        
         # expand(
         #     "analysis/{sample}/simulate/pandora_map_with_discovery/pandora_genotyped.filtered.vcf.gz",
         #     sample=config["sample"]
