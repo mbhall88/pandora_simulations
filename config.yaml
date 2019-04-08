@@ -1,4 +1,22 @@
-pandora:  "/Users/mbhall88/Projects/pandora/cmake-build-debug/pandora"
-sample:   "GC00003679"
-num_snps: 2
-perfect: True
+pandora:               "/Users/mbhall88/Projects/pandora/cmake-build-debug/pandora"
+num_genes:             1
+num_reads_to_simulate: 5000
+prg_nesting_lvls:
+    - 1
+    - 3
+    - 5
+    - 10
+num_snps:
+    - 1
+    - 3
+    - 5
+    - 10
+coverages:
+    - 15
+    - 30
+    - 60
+    - 100
+denovo_kmer_sizes:
+    - 9
+    - 11
+    - 13

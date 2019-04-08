@@ -1,20 +1,46 @@
+import itertools
+import random
 from pathlib import Path
+from scripts.simulation import Simulation
 
-RULES_DIRECTORY = Path("rules/")
+
+def extract_gene_name(string: str) -> str:
+    """Extract gene name from panX filenames"""
+    return string.split("_na_")[0]
+
+
+def generate_all_parameter_combination_directories(config: dict) -> list:
+    all_genes = [
+        extract_gene_name(filepath.name)
+        for filepath in Path("data/all_gene_alignments").rglob("*.fa.gz")
+    ]
+    genes_for_simulation = random.sample(all_genes, config["num_genes"])
+
+    parameter_combinations = list(
+        itertools.product(
+            genes_for_simulation,
+            [config["num_genes"]],
+            config["prg_nesting_lvls"],
+            config["num_snps"],
+            [True, False],
+            config["coverages"],
+            config["denovo_kmer_sizes"],
+        )
+    )
+
+    simulations = [Simulation(*params) for params in parameter_combinations]
+    return [simulation.get_directory() for simulation in simulations]
+
 
 # ======================================================
 # Config files
 # ======================================================
 configfile: "config.yaml"
 
-
 # ======================================================
-# Functions and Classes
+# Rules
 # ======================================================
-convert = {"A": "C", "C": "T", "G": "A", "T": "G"}
-def mutate(base):
-    base = base.upper()
-    return convert[base]
+output_directories = generate_all_parameter_combination_directories(config)
 
 rule all:
     input:
@@ -24,7 +50,8 @@ rule all:
         #     sample=config["sample"]
         # )
 
-include: str(RULES_DIRECTORY / "panx.smk")
+rules_dir = Path("rules/")
+include: str(rules_dir / "panx.smk")
 
 #
 # rule make_msa:
