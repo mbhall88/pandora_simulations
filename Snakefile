@@ -9,16 +9,17 @@ def extract_gene_name(string: str) -> str:
     return string.split("_na_")[0]
 
 
-def generate_all_parameter_combination_directories(config: dict) -> list:
-    all_genes = [
-        extract_gene_name(filepath.name)
-        for filepath in Path("data/all_gene_alignments").rglob("*.fa.gz")
-    ]
-    genes_for_simulation = random.sample(all_genes, config["num_genes"])
+def pick_genes_for_simulation(num: int) -> list:
+    all_genes = list(Path("data/all_gene_alignments").rglob("*.fa.gz"))
+    random.seed(1)
+    return random.sample(all_genes, num)
+
+
+def generate_all_parameter_combination_directories(config: dict, genes: list) -> list:
 
     parameter_combinations = list(
         itertools.product(
-            genes_for_simulation,
+            genes,
             [config["num_genes"]],
             config["prg_nesting_lvls"],
             config["num_snps"],
@@ -40,63 +41,31 @@ configfile: "config.yaml"
 # ======================================================
 # Rules
 # ======================================================
-output_directories = generate_all_parameter_combination_directories(config)
+genes_for_simulation = pick_genes_for_simulation(config["num_genes"])
+required_output_filepaths_for_dealign_original_msa_rule = []
+
+for filepath in genes_for_simulation:
+    subdir = filepath.parts[-2]
+    gene = extract_gene_name(filepath.name)
+    required_output_filepaths_for_dealign_original_msa_rule.append(
+        f"data/all_gene_alignments/{subdir}/{gene}.clustalo.fa"
+    )
+
+output_directories = generate_all_parameter_combination_directories(
+    config, genes_for_simulation
+)
 
 rule all:
     input:
-        
+        required_output_filepaths_for_dealign_original_msa_rule
         # expand(
-        #     "analysis/{sample}/simulate/pandora_map_with_discovery/pandora_genotyped.filtered.vcf.gz",
-        #     sample=config["sample"]
+        #     "data/all_gene_alignments/{subdir}/{gene}.clustalo.fa",
+        #     subdir=config["sample"]
         # )
 
 rules_dir = Path("rules/")
-include: str(rules_dir / "panx.smk")
+include: str(rules_dir / "multiple_sequence_alignment.smk")
 
-#
-# rule make_msa:
-#     output:
-#         msa = "analysis/{sample}/{sample}.msa.fa",
-#     params:
-#         num_variants = 3,
-#     run:
-#         import requests
-#         import random
-#
-#         gene = wildcards.sample
-#         url = f"http://pangenome.tuebingen.mpg.de/dataset/Escherichia_coli/geneCluster/{gene}_na_aln_reduced.fa"
-#         r = requests.get(url)
-#         fasta = r.content.decode("utf-8").split("\n")
-#         seq = ""
-#         # get first sequence from MSA
-#         for line in fasta[1:]:
-#             if line.startswith(">"):
-#                 break
-#             seq += line.strip()
-#
-#         # remove gaps
-#         seq = seq.replace("-", "")
-#
-#         # generate random variant positions
-#         random.seed(1)
-#         variant_positions = sorted(
-#             random.sample(range(len(seq)), k=params.num_variants)
-#             )
-#         sequences = []
-#         for pos in variant_positions:
-#             new_base = mutate(seq[pos])
-#             new_seq = list(seq)
-#             new_seq[pos] = new_base
-#             sequences.append("".join(new_seq))
-#
-#         with open(output.msa, "w") as fout:
-#             print(f">consensus\n{seq}", file=fout)
-#             for i, s in enumerate(sequences):
-#                 variant_pos = variant_positions[i]
-#                 original_base = seq[variant_pos]
-#                 new_base = mutate(original_base)
-#                 print(f">alt{i} {original_base}{variant_pos}{new_base}\n{s}",
-#                       file=fout)
 #
 #
 # rule make_prg:
