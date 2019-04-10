@@ -47,7 +47,7 @@ all_simulations = generate_all_simulations(
 
 files = set()
 for sim in all_simulations:
-    files.add(f"data/prgs/max_nesting_lvl_{sim.max_nesting_lvl}/{sim.gene}.prg.fa")
+    files.add(f"analysis/{max_nesting_lvl}/{gene}_random_path.fa")
 
 rule all:
     input:
@@ -60,53 +60,9 @@ rule all:
 rules_dir = Path("rules/")
 include: str(rules_dir / "multiple_sequence_alignment.smk")
 include: str(rules_dir / "build_prg.smk")
+include: str(rules_dir / "random_path.smk")
 
-#
-#
-# rule make_prg:
-#     input: "analysis/{sample}/{sample}.msa.fa"
-#     output:
-#         prg = "analysis/{sample}/{sample}.prg.fa",
-#     params:
-#         script = "scripts/make_prg_from_msa.py",
-#         prefix = "analysis/{sample}/{sample}",
-#     log: "logs/make_prg/{sample}.log"
-#     shell:
-#         """
-#         python3 {params.script} --prefix {params.prefix} {input} 2> {log}
-#         mv {params.prefix}.max_nest10.min_match7.prg {output.prg} 2>> {log}
-#         echo '>{wildcards.sample}' | cat - {output.prg} > temp && mv temp {output.prg} 2>> {log}
-#         echo '' >> {output.prg} 2>> {log}
-#         rm summary.tsv 2>> {log}
-#         """
-#
-#
-# rule index_prg:
-#     input: "analysis/{sample}/{sample}.prg.fa"
-#     output: "analysis/{sample}/{sample}.prg.fa.k15.w14.idx"
-#     params:
-#         pandora = config["pandora"],
-#     log: "logs/index_prg/{sample}.log"
-#     shell:
-#         """
-#         {params.pandora} index {input} &> {log}
-#         """
-#
-#
-# rule random_path:
-#     input:
-#         prg = "analysis/{sample}/{sample}.prg.fa",
-#         index = "analysis/{sample}/{sample}.prg.fa.k15.w14.idx"
-#     output: "analysis/{sample}/{sample}_random_path.fa"
-#     params:
-#         pandora = config["pandora"],
-#         num_paths = 1,
-#     log: "logs/random_path/{sample}.log"
-#     shell:
-#         """
-#         {params.pandora} random_path {input.prg} {params.num_paths} &> {log}
-#         gzip -d random_paths.fa.gz && mv random_paths.fa {output} 2>> {log}
-#         """
+
 #
 #
 # rule mutate_random_path:

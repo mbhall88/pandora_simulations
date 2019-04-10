@@ -22,3 +22,17 @@ rule build_initial_prg:
         echo '' >> {output.prg} 2>> {log}
         rm summary.tsv 2>> {log}
         """
+
+rule index_initial_prg:
+    input:
+        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}.prg.fa"
+    output:
+        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}.prg.fa.k15.w14.idx"
+    # singularity:
+    #     "shub://mbhall88/Singularity_recipes:pandora@"
+    log:
+        "logs/index_initial_prg/max_nesting_lvl_{max_nesting_lvl}/{gene}.log"
+    shell:
+        """
+        pandora index {input} &> {log}
+        """

@@ -40,10 +40,15 @@ conda activate base
 
 For more installation options, see the [conda docs](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html#).
 
+### Singularity
+
+Snakemake requires Singularity version **less than** 3.0. For installation of Singularity
+see the [docs](https://www.sylabs.io/guides/2.6/user-guide/quick_start.html#quick-installation-steps).
+
 ## Run pipeline
 
 From the project root directory, run
 
 ```sh
-snakemake --use-conda
+snakemake --use-conda --use-singularity
 ```
