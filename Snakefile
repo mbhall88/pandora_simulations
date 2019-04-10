@@ -11,11 +11,11 @@ def extract_gene_name(string: str) -> str:
 
 def pick_genes_for_simulation(num: int) -> list:
     all_genes = list(Path("data/all_gene_alignments").rglob("*.fa.gz"))
-    random.seed(1)
+    random.seed(3)
     return random.sample(all_genes, num)
 
 
-def generate_all_parameter_combination_directories(config: dict, genes: list) -> list:
+def generate_all_simulations(config: dict, genes: list) -> list:
 
     parameter_combinations = list(
         itertools.product(
@@ -29,8 +29,7 @@ def generate_all_parameter_combination_directories(config: dict, genes: list) ->
         )
     )
 
-    simulations = [Simulation(*params) for params in parameter_combinations]
-    return [simulation.get_directory() for simulation in simulations]
+    return [Simulation(*params) for params in parameter_combinations]
 
 
 # ======================================================
@@ -42,22 +41,17 @@ configfile: "config.yaml"
 # Rules
 # ======================================================
 genes_for_simulation = pick_genes_for_simulation(config["num_genes"])
-required_output_filepaths_for_dealign_original_msa_rule = []
-
-for filepath in genes_for_simulation:
-    subdir = filepath.parts[-2]
-    gene = extract_gene_name(filepath.name)
-    required_output_filepaths_for_dealign_original_msa_rule.append(
-        f"data/all_gene_alignments/{subdir}/{gene}.clustalo.fa"
-    )
-
-output_directories = generate_all_parameter_combination_directories(
-    config, genes_for_simulation
+all_simulations = generate_all_simulations(
+    config, [extract_gene_name(gene.name) for gene in genes_for_simulation]
 )
+
+files = set()
+for sim in all_simulations:
+    files.add(f"data/prgs/max_nesting_lvl_{sim.max_nesting_lvl}/{sim.gene}.prg.fa")
 
 rule all:
     input:
-        required_output_filepaths_for_dealign_original_msa_rule
+        files
         # expand(
         #     "data/all_gene_alignments/{subdir}/{gene}.clustalo.fa",
         #     subdir=config["sample"]
@@ -65,6 +59,7 @@ rule all:
 
 rules_dir = Path("rules/")
 include: str(rules_dir / "multiple_sequence_alignment.smk")
+include: str(rules_dir / "build_prg.smk")
 
 #
 #
