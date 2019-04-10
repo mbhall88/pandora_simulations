@@ -47,7 +47,7 @@ all_simulations = generate_all_simulations(
 
 files = set()
 for sim in all_simulations:
-    files.add(f"analysis/{max_nesting_lvl}/{gene}_random_path.fa")
+    files.add(f"analysis/{sim.max_nesting_lvl}/{sim.gene}_random_path.fa")
 
 rule all:
     input:
