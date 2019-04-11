@@ -36,6 +36,7 @@ sudo bash miniconda3.sh -b -p "$conda_prefix"
 echo ". ${conda_prefix}/etc/profile.d/conda.sh" >> ~/.bashrc
 source "$HOME"/.bashrc
 conda activate base
+conda config --append channels bioconda
 ```
 
 For more installation options, see the [conda docs](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html#).
