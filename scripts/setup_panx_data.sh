@@ -41,7 +41,7 @@ rm "$tarball"
 # Remove amino acid alignments
 case "$(uname -s)" in
     Linux*)     find "$panx_dir" -type f -name '*_aa_*' -print0 | xargs --null -I @ rm @ ;;
-    Darwin*)    find "$panx_dir" -type f -name '*_aa_*' -print0 | xargs -I @ rm @ ;;
+    Darwin*)    find "$panx_dir" -type f -name '*_aa_*' -print0 | xargs -0 -I @ rm @ ;;
     *)          echo "Only Mac and Linux are supported"; exit 1;
 esac
 

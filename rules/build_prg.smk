@@ -7,12 +7,11 @@ rule build_initial_prg:
         script = "scripts/make_prg_from_msa.py",
         prefix = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}",
         max_nesting_lvl = "{max_nesting_lvl}",
-    singularity:
-        "docker://continuumio/miniconda3:4.5.12"
+    singularity: CONDA_IMG
     conda:
         "../envs/make_prg.yaml"
     log:
-        "logs/make_prg/max_nesting_lvl_{max_nesting_lvl}/{gene}.log"
+        "logs/{max_nesting_lvl}/{gene}/build_initial_prg.log"
     shell:
         """
         python3 {params.script} --max_nesting {params.max_nesting_lvl} \
@@ -31,7 +30,7 @@ rule index_initial_prg:
     # singularity:
     #     "shub://mbhall88/Singularity_recipes:pandora@ac594f67db8a2f66e1c5cc049cfe1968"
     log:
-        "logs/index_initial_prg/max_nesting_lvl_{max_nesting_lvl}/{gene}.log"
+        "logs/{max_nesting_lvl}/{gene}/index_initial_prg.log"
     shell:
         """
         pandora index {input} &> {log}

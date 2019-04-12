@@ -6,8 +6,7 @@ rule dealign_original_msa:
     threads: 2
     params:
         extra = "--dealign"
-    singularity:
-        "docker://continuumio/miniconda3:4.5.12"
+    singularity: CONDA_IMG
     log:
         "logs/dealign_original_msa/{gene}.log"
     wrapper:

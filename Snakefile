@@ -4,6 +4,9 @@ from pathlib import Path
 from scripts.simulation import Simulation
 
 
+CONDA_IMG = "docker://continuumio/miniconda3:4.5.12"
+
+
 def extract_gene_name(string: str) -> str:
     """Extract gene name from panX filenames"""
     return string.split("_na_")[0]
@@ -11,7 +14,7 @@ def extract_gene_name(string: str) -> str:
 
 def pick_genes_for_simulation(num: int) -> list:
     all_genes = list(Path("data/all_gene_alignments").rglob("*.fa.gz"))
-    random.seed(3)
+    random.seed(88)
     return random.sample(all_genes, num)
 
 
@@ -47,20 +50,20 @@ all_simulations = generate_all_simulations(
 
 files = set()
 for sim in all_simulations:
-    files.add(f"analysis/{sim.max_nesting_lvl}/{sim.gene}_random_path.fa")
+    files.add(
+        f"analysis/{sim.max_nesting_lvl}/{sim.gene}/{sim.num_snps}/random_path_mutated.vcf"
+    )
 
+    
 rule all:
-    input:
-        files
-        # expand(
-        #     "data/all_gene_alignments/{subdir}/{gene}.clustalo.fa",
-        #     subdir=config["sample"]
-        # )
+    input: files
+
 
 rules_dir = Path("rules/")
 include: str(rules_dir / "multiple_sequence_alignment.smk")
 include: str(rules_dir / "build_prg.smk")
 include: str(rules_dir / "random_path.smk")
+include: str(rules_dir / "mutate.smk")
 
 
 #
