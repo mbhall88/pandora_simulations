@@ -7,7 +7,7 @@ rule get_random_path_from_prg:
     params:
         num_paths = 1,
     # singularity:
-    #     "shub://mbhall88/Singularity_recipes:pandora@"
+    #     "shub://mbhall88/Singularity_recipes:pandora@ac594f67db8a2f66e1c5cc049cfe1968"
     log:
         "logs/get_random_path_from_prg/max_nesting_lvl_{max_nesting_lvl}/{gene}.log"
     shell:
