@@ -28,27 +28,20 @@ rule join_mutated_random_paths:
             output_fh.write(f"{header}\n{sequence}\n")
 
 
-
-
-# rule simulate_reads:
-#     input: "analysis/{sample}/{sample}_random_path_mutated.fa"
-#     output: "analysis/{sample}/simulate/simulated.fa"
-#     params:
-#         profile = "ecoli_R9_1D",
-#         perfect = "--perfect" if config["perfect"] else "",
-#         num_reads = 500,
-#         min_len = 200,
-#         prefix = "analysis/{sample}/simulate/simulated",
-#     log: "logs/simulate_reads/{sample}.log"
-#     shell:
-#         """
-#         max_len=$(grep -v '>' {input} | wc | awk '{{print $3-$1-10}}')
-#         nanosim-h --number {params.num_reads} \
-#             --rnf \
-#             {params.perfect} \
-#             --profile {params.profile} \
-#             --max-len $max_len \
-#             --min-len {params.min_len} \
-#             --out-pref {params.prefix} \
-#             {input} 2> {log}
-#         """
+rule simulate_reads:
+    input:
+        "analysis/{max_nesting_lvl}/combined_mutated_random_paths_with_{num_snps}_snps.fa"
+    output:
+        reads = "analysis/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/reads.simulated.fa",
+        log = "analysis/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/reads.simulated.log",
+        errors = "analysis/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/reads.simulated.errors.txt"
+    params:
+        profile = "ecoli_R9_1D",
+        perfect_reads = lambda wildcards: wildcards.read_quality == "perfect",
+        num_reads = 500 * config["num_genes"],
+        extra = "--circular --rnf --seed 88 ",
+    singularity: CONDA_IMG
+    log:
+        "logs/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/simulate_reads.log"
+    wrapper:
+        "COMMIT/bio/nanosim-h"  #TODO: add COMMIT when PR is merged

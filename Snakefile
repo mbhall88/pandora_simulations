@@ -50,9 +50,10 @@ all_simulations = generate_all_simulations(
 
 files = set()
 for sim in all_simulations:
+    sim_path = Path("analysis") / sim.get_directory()
+
     files.add(
-        # f"analysis/{sim.max_nesting_lvl}/{sim.gene}/{sim.num_snps}/random_path_mutated.vcf"
-        f"analysis/{sim.max_nesting_lvl}/combined_mutated_random_paths_with_{sim.num_snps}_snps.fa"
+        sim_path.parents[1] / "reads.simulated.fa"
     )
 
 

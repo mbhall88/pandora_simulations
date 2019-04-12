@@ -25,7 +25,7 @@ class Simulation:
         self.denovo_kmer_size = denovo_kmer_size
 
     def get_directory(self) -> Path:
-        """Generates a directory path describing the paramters of the simulation."""
+        """Generates a directory path describing the parameters of the simulation."""
         path = Path(str(self.num_genes))
         path /= str(self.max_nesting_lvl)
         path /= self.gene
