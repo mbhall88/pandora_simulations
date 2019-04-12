@@ -19,12 +19,3 @@ rule mutate_random_path:
         "logs/{max_nesting_lvl}/{gene}/{num_snps}/mutate_random_path.log"
     wrapper:
         "COMMIT/bio/snp-mutator"  # TODO: add commit when PR is merged for wrapper
-
-# rule join_random_paths:
-#     input:
-#         expand(
-#                 "analysis/{{max_nesting_lvl}}/{gene}_random_path.fa",
-#                 gene=[extract_gene_name(gene.name) for gene in genes_for_simulation],
-#         )
-#     output:
-#         "analysis/{}"

@@ -51,10 +51,11 @@ all_simulations = generate_all_simulations(
 files = set()
 for sim in all_simulations:
     files.add(
-        f"analysis/{sim.max_nesting_lvl}/{sim.gene}/{sim.num_snps}/random_path_mutated.vcf"
+        # f"analysis/{sim.max_nesting_lvl}/{sim.gene}/{sim.num_snps}/random_path_mutated.vcf"
+        f"analysis/{sim.max_nesting_lvl}/combined_mutated_random_paths_with_{sim.num_snps}_snps.fa"
     )
 
-    
+
 rule all:
     input: files
 
@@ -64,67 +65,8 @@ include: str(rules_dir / "multiple_sequence_alignment.smk")
 include: str(rules_dir / "build_prg.smk")
 include: str(rules_dir / "random_path.smk")
 include: str(rules_dir / "mutate.smk")
+include: str(rules_dir / "simulate.smk")
 
-
-#
-#
-# rule mutate_random_path:
-#     input: "analysis/{sample}/{sample}_random_path.fa"
-#     output:
-#         fasta = "analysis/{sample}/{sample}_random_path_mutated.fa",
-#         variants = "analysis/{sample}/random_path_snps.tsv"
-#     log: "logs/random_path/{sample}.log"
-#     params:
-#         num_snps = config["num_snps"]
-#     run:
-#         import random
-#         snp_info_fh = open(output.variants, "w")
-#         print("pos\tref\talt", file=snp_info_fh)
-#         seq = ""
-#         with open(input[0]) as fasta:
-#             # get first sequence from MSA
-#             for line in fasta:
-#                 if line.startswith(">"):
-#                     header = line.strip()
-#                     continue
-#                 seq += line.strip()
-#
-#         # generate random snps
-#         snps = random.sample(range(len(seq)), k=params.num_snps)
-#         new_seq = list(seq)
-#         for pos in snps:
-#             new_base = mutate(seq[pos])
-#             new_seq[pos] = new_base
-#             print("{}\t{}\t{}".format(pos, seq[pos], new_base), file=snp_info_fh)
-#
-#         with open(output.fasta, "w") as fout:
-#             print("{}\n{}\n".format(header, "".join(new_seq)), file=fout)
-#
-#         snp_info_fh.close()
-#
-# rule simulate_reads:
-#     input: "analysis/{sample}/{sample}_random_path_mutated.fa"
-#     output: "analysis/{sample}/simulate/simulated.fa"
-#     params:
-#         profile = "ecoli_R9_1D",
-#         perfect = "--perfect" if config["perfect"] else "",
-#         num_reads = 500,
-#         min_len = 200,
-#         prefix = "analysis/{sample}/simulate/simulated",
-#     log: "logs/simulate_reads/{sample}.log"
-#     shell:
-#         """
-#         max_len=$(grep -v '>' {input} | wc | awk '{{print $3-$1-10}}')
-#         nanosim-h --number {params.num_reads} \
-#             --rnf \
-#             {params.perfect} \
-#             --profile {params.profile} \
-#             --max-len $max_len \
-#             --min-len {params.min_len} \
-#             --out-pref {params.prefix} \
-#             {input} 2> {log}
-#         """
-#
 # rule shuffle:
 #     input: "analysis/{sample}/simulate/simulated.fa"
 #     output: "analysis/{sample}/simulate/simulated.shuffle.fa"
