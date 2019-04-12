@@ -30,12 +30,15 @@ can be done with:
 
 ```sh
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3.sh
-conda_prefix=/opt/miniconda
-bash miniconda3.sh -b -p "$conda_prefix"
+conda_prefix=/usr/local/miniconda
+sudo bash miniconda3.sh -b -p "$conda_prefix"
 # add conda to the end of your path
-echo "export PATH=$PATH:$conda_prefix" >> "$HOME"/.bashrc
+echo ". ${conda_prefix}/etc/profile.d/conda.sh" >> ~/.bashrc
 source "$HOME"/.bashrc
 conda activate base
+conda config --add channels defaults
+conda config --add channels bioconda
+conda config --add channels conda-forge
 ```
 
 For more installation options, see the [conda docs](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html#).
