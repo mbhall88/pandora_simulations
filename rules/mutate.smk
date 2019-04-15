@@ -6,16 +6,24 @@ rule mutate_random_path:
         vcf = "analysis/{max_nesting_lvl}/{num_snps}/{gene}_random_path_mutated.vcf"
     params:
         num_simulations = 1,
-        extra = (
+        extra = lambda wildcards: (
             " ".join([
-                "--num-substitutions {num_snps}",
+                "--num-substitutions {}".format(wildcards.num_snps),
                 "--num-insertions 0",
                 "--num-deletions 0",
                 "--random-seed 88",  # make analysis reproducible
             ]),
         )
     singularity: CONDA_IMG
+    conda:
+        "../envs/mutate.yaml"
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{gene}_mutate_random_path.log"
-    wrapper:
-        "0.32.0/bio/snp-mutator"
+    shell:
+        """
+        cd $(dirname {output.sequences}) || exit 1
+        snpmutator --num-simulations {params.num_simulations} \
+            {params.extra} \
+            --vcf {output.vcf} \
+            {input} 2> {log}
+        """

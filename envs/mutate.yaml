@@ -1,0 +1,6 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python >=3.5
+  - snp-mutator ==1.0.0
