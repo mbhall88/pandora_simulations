@@ -1,7 +1,7 @@
 rule get_random_path_from_prg:
     input:
-        prg = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}.prg.fa",
-        index = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}.prg.fa.k15.w14.idx"
+        prg = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg.fa",
+        index = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg.fa.k15.w14.idx"
     output:
         "analysis/{max_nesting_lvl}/{gene}/random_path.fa"
     params:

@@ -56,6 +56,10 @@ for sim in all_simulations:
         sim_path.parents[1] / "reads.simulated.fa"
     )
 
+    files.add(
+        f"data/prgs/max_nesting_lvl_{sim.max_nesting_lvl}/combined.prg.fa.k15.w14.idx"
+    )
+
 
 rule all:
     input: files
@@ -68,43 +72,9 @@ include: str(rules_dir / "random_path.smk")
 include: str(rules_dir / "mutate.smk")
 include: str(rules_dir / "simulate.smk")
 
-# rule shuffle:
-#     input: "analysis/{sample}/simulate/simulated.fa"
-#     output: "analysis/{sample}/simulate/simulated.shuffle.fa"
-#     log: "logs/shuffle/{sample}.log"
-#     shell:
-#         """
-#         fastaq to_fasta -l 0 {input} - | paste - - | sort -R | awk '{{print $1; print $2}}' > {output} 2> {log}
-#         """
+
 #
-# rule map_with_discovery:
-#     input:
-#         prg = "analysis/{sample}/{sample}.prg.fa",
-#         index = "analysis/{sample}/{sample}.prg.fa.k15.w14.idx",
-#         reads = "analysis/{sample}/simulate/simulated.shuffle.fa",
-#         ref = "analysis/{sample}/{sample}_random_path_mutated.fa",
-#     output:
-#         directory("analysis/{sample}/simulate/pandora_map_with_discovery/denovo_paths"),
-#         consensus = "analysis/{sample}/simulate/pandora_map_with_discovery/pandora.consensus.fq.gz",
-#         genotype_vcf = "analysis/{sample}/simulate/pandora_map_with_discovery/pandora_genotyped.vcf",
-#     params:
-#         pandora = config["pandora"],
-#         out_prefix = "analysis/{sample}/simulate/pandora_map_with_discovery/",
-#     log: "logs/map_with_discovery/{sample}.log"
-#     shell:
-#         """
-#         genome_size=$(grep -v '>' {input.ref} | wc | awk '{{print $3-$1-10}}')
-#         {params.pandora} map -p {input.prg} \
-#             -r {input.reads} \
-#             -o {params.out_prefix} \
-#             --output_kg \
-#             --output_covgs \
-#             --output_vcf \
-#             --genotype \
-#             --genome_size $genome_size \
-#             --discover \
-#             --log_level debug &> {log}
-#         """
+
 #
 #
 # """

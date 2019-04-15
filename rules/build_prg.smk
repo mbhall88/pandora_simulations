@@ -2,10 +2,10 @@ rule build_initial_prg:
     input:
         "data/realignments/{gene}.clustalo.fa"
     output:
-        prg = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}.prg.fa",
+        prg = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg.fa",
     params:
         script = "scripts/make_prg_from_msa.py",
-        prefix = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}",
+        prefix = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg",
         max_nesting_lvl = "{max_nesting_lvl}",
     singularity: CONDA_IMG
     conda:
@@ -22,15 +22,45 @@ rule build_initial_prg:
         rm summary.tsv 2>> {log}
         """
 
-rule index_initial_prg:
+rule combine_prgs:
     input:
-        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}.prg.fa"
+        expand(
+            "data/prgs/max_nesting_lvl_{{max_nesting_lvl}}/{gene}/prg.fa",
+            gene=[extract_gene_name(gene.name) for gene in genes_for_simulation]
+        )
     output:
-        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}.prg.fa.k15.w14.idx"
+        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
+    log:
+        "logs/{max_nesting_lvl}/combine_prgs.log"
+    shell:
+        """
+        cat {input} > {output} 2> {log}
+        """
+
+rule index_initial_combined_prg:
+    input:
+        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
+    output:
+        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa.k15.w14.idx"
     # singularity:
     #     "shub://mbhall88/Singularity_recipes:pandora@ac594f67db8a2f66e1c5cc049cfe1968"
     log:
-        "logs/{max_nesting_lvl}/{gene}/index_initial_prg.log"
+        "logs/{max_nesting_lvl}/index_initial_combined_prg.log"
+    shell:
+        """
+        pandora index {input} &> {log}
+        """
+
+
+rule index_initial_gene_prgs:
+    input:
+        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg.fa"
+    output:
+        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg.fa.k15.w14.idx"
+    # singularity:
+    #     "shub://mbhall88/Singularity_recipes:pandora@ac594f67db8a2f66e1c5cc049cfe1968"
+    log:
+        "logs/{max_nesting_lvl}/{gene}/index_initial_gene_prgs.log"
     shell:
         """
         pandora index {input} &> {log}
