@@ -11,7 +11,7 @@ rule build_initial_prg:
     conda:
         "../envs/make_prg.yaml"
     log:
-        "logs/{max_nesting_lvl}/{gene}/build_initial_prg.log"
+        "logs/{max_nesting_lvl}/{gene}_build_initial_prg.log"
     shell:
         """
         python3 {params.script} --max_nesting {params.max_nesting_lvl} \

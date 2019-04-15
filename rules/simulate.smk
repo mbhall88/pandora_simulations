@@ -2,13 +2,13 @@
 rule join_mutated_random_paths:
     input:
         expand(
-                "analysis/{{max_nesting_lvl}}/{gene}/{{num_snps}}/random_path_mutated_1.fasta",
+                "analysis/{{max_nesting_lvl}}/{{num_snps}}/{gene}_random_path_mutated_1.fasta",
                 gene=[extract_gene_name(gene.name) for gene in genes_for_simulation],
         )
     output:
-        "analysis/{max_nesting_lvl}/combined_mutated_random_paths_with_{num_snps}_snps.fa"
+        "analysis/{max_nesting_lvl}/{num_snps}/combined_mutated_random_paths.fa"
     log:
-        "logs/{max_nesting_lvl}/join_mutated_random_paths_{num_snps}_snps.log"
+        "logs/{max_nesting_lvl}/{num_snps}/join_mutated_random_paths.log"
     run:
         from pathlib import Path
 
@@ -30,11 +30,11 @@ rule join_mutated_random_paths:
 
 rule simulate_reads:
     input:
-        "analysis/{max_nesting_lvl}/combined_mutated_random_paths_with_{num_snps}_snps.fa"
+        "analysis/{max_nesting_lvl}/{num_snps}/combined_mutated_random_paths.fa"
     output:
-        reads = "analysis/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/reads.simulated.fa",
-        log = "analysis/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/reads.simulated.log",
-        errors = "analysis/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/reads.simulated.errors.txt"
+        reads = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.fa",
+        log = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.log",
+        errors = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.errors.txt"
     params:
         profile = "ecoli_R9_1D",
         perfect_reads = lambda wildcards: wildcards.read_quality == "perfect",
@@ -42,6 +42,6 @@ rule simulate_reads:
         extra = "--circular --rnf --seed 88 ",
     singularity: CONDA_IMG
     log:
-        "logs/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/simulate_reads.log"
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/simulate_reads.log"
     wrapper:
         "0.32.0/bio/nanosim-h"

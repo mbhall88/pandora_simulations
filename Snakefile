@@ -53,11 +53,7 @@ for sim in all_simulations:
     sim_path = Path("analysis") / sim.get_directory()
 
     files.add(
-        sim_path.parents[1] / "reads.simulated.fa"
-    )
-
-    files.add(
-        f"data/prgs/max_nesting_lvl_{sim.max_nesting_lvl}/combined.prg.fa.k15.w14.idx"
+        f"analysis/{sim.max_nesting_lvl}/{sim.num_snps}/{sim.read_quality}/{sim.coverage}/{sim.denovo_kmer_size}/map_with_discovery/pandora.consensus.fq.gz"
     )
 
 
@@ -71,6 +67,7 @@ include: str(rules_dir / "build_prg.smk")
 include: str(rules_dir / "random_path.smk")
 include: str(rules_dir / "mutate.smk")
 include: str(rules_dir / "simulate.smk")
+include: str(rules_dir / "map.smk")
 
 
 #
