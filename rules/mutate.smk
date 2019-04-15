@@ -18,7 +18,7 @@ rule mutate_random_path:
     conda:
         "../envs/mutate.yaml"
     log:
-        "logs/{max_nesting_lvl}/{num_snps}/{gene}_mutate_random_path.log"
+        "logs/{max_nesting_lvl}/{num_snps}/mutate_random_paths.log"
     shell:
         """
         input=$(realpath {input})
