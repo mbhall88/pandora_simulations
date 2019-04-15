@@ -21,9 +21,12 @@ rule mutate_random_path:
         "logs/{max_nesting_lvl}/{num_snps}/{gene}_mutate_random_path.log"
     shell:
         """
+        input=$(realpath {input})
+        log=$(realpath {log})
+        vcf=$(realpath {output.vcf})
         cd $(dirname {output.sequences}) || exit 1
         snpmutator --num-simulations {params.num_simulations} \
             {params.extra} \
-            --vcf {output.vcf} \
-            {input} 2> {log}
+            --vcf $vcf \
+            $input 2> $log
         """
