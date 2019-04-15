@@ -50,18 +50,3 @@ rule index_initial_combined_prg:
         """
         pandora index {input} &> {log}
         """
-
-
-rule index_initial_gene_prgs:
-    input:
-        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg.fa"
-    output:
-        "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg.fa.k15.w14.idx"
-    # singularity:
-    #     "shub://mbhall88/Singularity_recipes:pandora@ac594f67db8a2f66e1c5cc049cfe1968"
-    log:
-        "logs/{max_nesting_lvl}/{gene}/index_initial_gene_prgs.log"
-    shell:
-        """
-        pandora index {input} &> {log}
-        """

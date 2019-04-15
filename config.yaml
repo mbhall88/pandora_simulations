@@ -5,7 +5,7 @@ prg_nesting_lvls:
     - 3
     - 5
     - 10
-num_snps:
+snps_per_gene:
     - 1
     - 3
     - 5

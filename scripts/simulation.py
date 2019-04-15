@@ -19,7 +19,7 @@ class Simulation:
         self.gene = gene
         self.num_genes = num_genes
         self.max_nesting_lvl = max_nesting_lvl
-        self.num_snps = num_snps
+        self.num_snps = num_snps * num_genes
         self.read_quality = "imperfect" if is_imperfect else "perfect"
         self.coverage = coverage
         self.denovo_kmer_size = denovo_kmer_size

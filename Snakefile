@@ -25,7 +25,7 @@ def generate_all_simulations(config: dict, genes: list) -> list:
             genes,
             [config["num_genes"]],
             config["prg_nesting_lvls"],
-            config["num_snps"],
+            config["snps_per_gene"],
             [True, False],
             config["coverages"],
             config["denovo_kmer_sizes"],

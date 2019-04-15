@@ -1,9 +1,9 @@
 rule mutate_random_path:
     input:
-        "analysis/{max_nesting_lvl}/{gene}_random_path.fa"
+        "analysis/{max_nesting_lvl}/combined_random_paths.fa"
     output:
-        sequences = "analysis/{max_nesting_lvl}/{num_snps}/{gene}_random_path_mutated_1.fasta",
-        vcf = "analysis/{max_nesting_lvl}/{num_snps}/{gene}_random_path_mutated.vcf"
+        sequences = "analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated_1.fasta",
+        vcf = "analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated.vcf"
     params:
         num_simulations = 1,
         extra = lambda wildcards: (

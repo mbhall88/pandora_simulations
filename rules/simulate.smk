@@ -1,36 +1,6 @@
-# generates the reference to simulate reads from
-rule join_mutated_random_paths:
-    input:
-        expand(
-                "analysis/{{max_nesting_lvl}}/{{num_snps}}/{gene}_random_path_mutated_1.fasta",
-                gene=[extract_gene_name(gene.name) for gene in genes_for_simulation],
-        )
-    output:
-        "analysis/{max_nesting_lvl}/{num_snps}/combined_mutated_random_paths.fa"
-    log:
-        "logs/{max_nesting_lvl}/{num_snps}/join_mutated_random_paths.log"
-    run:
-        from pathlib import Path
-
-        with open(output[0], "w") as output_fh:
-            header = ">combined_genome_of_genes "
-            sequence = ""
-
-            for input_path in input:
-                current_gene = Path(input_path).parts[2]
-                header += f"{current_gene} "
-
-                with open(input_path) as input_fh:
-                    for line in input_fh:
-                        if not line.startswith(">"):
-                            sequence += line.rstrip()
-
-            output_fh.write(f"{header}\n{sequence}\n")
-
-
 rule simulate_reads:
     input:
-        "analysis/{max_nesting_lvl}/{num_snps}/combined_mutated_random_paths.fa"
+        "analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated_1.fasta"
     output:
         reads = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.fa",
         log = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.log",
