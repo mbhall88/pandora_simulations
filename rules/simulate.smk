@@ -44,4 +44,4 @@ rule simulate_reads:
     log:
         "logs/{max_nesting_lvl}/{gene}/{num_snps}/{read_quality}/simulate_reads.log"
     wrapper:
-        "COMMIT/bio/nanosim-h"  #TODO: add COMMIT when PR is merged
+        "0.32.0/bio/nanosim-h"

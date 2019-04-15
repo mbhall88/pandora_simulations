@@ -18,4 +18,4 @@ rule mutate_random_path:
     log:
         "logs/{max_nesting_lvl}/{gene}/{num_snps}/mutate_random_path.log"
     wrapper:
-        "COMMIT/bio/snp-mutator"  # TODO: add commit when PR is merged for wrapper
+        "0.32.0/bio/snp-mutator"
