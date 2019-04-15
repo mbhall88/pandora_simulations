@@ -39,7 +39,7 @@ rule simulate_reads:
         profile = "ecoli_R9_1D",
         perfect_reads = lambda wildcards: wildcards.read_quality == "perfect",
         num_reads = 500 * config["num_genes"],
-        extra = "--circular --rnf --seed 88 ",
+        extra = "--circular --rnf --seed 88 --unalign-rate 0 ",
     singularity: CONDA_IMG
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/simulate_reads.log"
