@@ -3,7 +3,7 @@ rule map_with_discovery:
         prg = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
         index = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa.k15.w14.idx",
         reads = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.fa",
-        ref = "analysis/{max_nesting_lvl}/{num_snps}/combined_mutated_random_paths.fa"
+        ref = "analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated_1.fasta",
     output:
         directory("analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/denovo_paths"),
         consensus = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora.consensus.fq.gz",
