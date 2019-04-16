@@ -44,6 +44,7 @@ configfile: "config.yaml"
 # Rules
 # ======================================================
 genes_for_simulation = pick_genes_for_simulation(config["num_genes"])
+GENE_NAMES = [extract_gene_name(gene.name) for gene in genes_for_simulation]
 all_simulations = generate_all_simulations(
     config, [extract_gene_name(gene.name) for gene in genes_for_simulation]
 )
@@ -53,7 +54,7 @@ for sim in all_simulations:
     sim_path = Path("analysis") / sim.get_directory()
 
     files.add(
-        f"analysis/{sim.max_nesting_lvl}/{sim.num_snps}/{sim.read_quality}/{sim.coverage}/{sim.denovo_kmer_size}/map_with_discovery/pandora.consensus.fq.gz"
+        f"{sim_path}/map_with_discovery/updated_msas/{sim.gene}_with_denovo_paths.msa.fa"
     )
 
 

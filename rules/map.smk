@@ -20,11 +20,11 @@ rule map_with_discovery:
             --outdir {params.outdir} \
             --output_kg \
             --output_covgs \
-            --max_covg {coverage} \
+            --max_covg {wildcards.coverage} \
             --output_vcf \
             --genotype \
             --genome_size $genome_size \
             --discover \
-            --denovo_kmer_size {denovo_kmer_size} \
+            --denovo_kmer_size {wildcards.denovo_kmer_size} \
             --log_level debug &> {log}
         """

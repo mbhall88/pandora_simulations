@@ -24,7 +24,7 @@ class TestSimulation(unittest.TestCase):
 
     def test_get_directory_withImperfectReads(self):
         actual = self.simulation.get_directory()
-        expected = Path("3") / "1" / "test" / "6" / "imperfect" / "30" / "11"
+        expected = Path("1") / "6" / "imperfect" / "30" / "11"
 
         self.assertEqual(actual, expected)
 
@@ -32,7 +32,7 @@ class TestSimulation(unittest.TestCase):
         self.simulation.read_quality = "perfect"
 
         actual = self.simulation.get_directory()
-        expected = Path("3") / "1" / "test" / "6" / "perfect" / "30" / "11"
+        expected = Path("1") / "6" / "perfect" / "30" / "11"
 
         self.assertEqual(actual, expected)
 

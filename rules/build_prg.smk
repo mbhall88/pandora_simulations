@@ -26,7 +26,7 @@ rule combine_prgs:
     input:
         expand(
             "data/prgs/max_nesting_lvl_{{max_nesting_lvl}}/{gene}/prg.fa",
-            gene=[extract_gene_name(gene.name) for gene in genes_for_simulation]
+            gene=GENE_NAMES
         )
     output:
         "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",

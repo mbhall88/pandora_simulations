@@ -26,9 +26,7 @@ class Simulation:
 
     def get_directory(self) -> Path:
         """Generates a directory path describing the parameters of the simulation."""
-        path = Path(str(self.num_genes))
-        path /= str(self.max_nesting_lvl)
-        path /= self.gene
+        path = Path(str(self.max_nesting_lvl))
         path /= str(self.num_snps)
         path /= self.read_quality
         path /= str(self.coverage)
