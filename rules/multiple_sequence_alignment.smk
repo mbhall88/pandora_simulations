@@ -34,7 +34,7 @@ rule add_denovo_paths_to_msa:
 
             for p in gene_paths:
                 read_counter = 1
-                
+
                 with p.open() as fasta:
                     for line in fasta:
                         if line.startswith(">"):
@@ -42,3 +42,16 @@ rule add_denovo_paths_to_msa:
                             read_counter += 1
                         else:
                             fh_out.write(line)
+
+
+rule run_msa_after_adding_denovo_paths:
+    input:
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}_with_denovo_paths.msa.fa"
+    output:
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}_with_denovo_paths.clustalo.fa"
+    threads: 2
+    singularity: CONDA_IMG
+    log:
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}_run_msa_after_adding_denovo_paths.log"
+    wrapper:
+        "0.32.0/bio/clustalo"
