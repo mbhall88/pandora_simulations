@@ -54,7 +54,7 @@ for sim in all_simulations:
     sim_path = Path("analysis") / sim.get_directory()
 
     files.add(
-        f"{sim_path}/map_with_discovery/updated_msas/{sim.gene}/prg.fa"
+        f"{sim_path}/map_with_discovery/updated_msas/combined.prg.fa.k15.w14.idx"
     )
 
 

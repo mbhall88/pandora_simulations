@@ -21,6 +21,7 @@ rule build_initial_prg:
         rm summary.tsv 2>> {log}
         """
 
+
 rule combine_prgs:
     input:
         expand(
@@ -36,6 +37,7 @@ rule combine_prgs:
         cat {input} > {output} 2> {log}
         """
 
+
 rule index_initial_combined_prg:
     input:
         "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
@@ -49,6 +51,7 @@ rule index_initial_combined_prg:
         """
         pandora index {input} &> {log}
         """
+
 
 rule build_prg_after_adding_denovo_paths:
     input:
@@ -71,4 +74,35 @@ rule build_prg_after_adding_denovo_paths:
         echo '>{wildcards.gene}' | cat - {output.prg} > temp && mv temp {output.prg} 2>> {log}
         echo '' >> {output.prg} 2>> {log}
         rm summary.tsv 2>> {log}
+        """
+
+
+rule combine_prgs_after_adding_denovo_paths:
+    input:
+        expand(
+            "analysis/{{max_nesting_lvl}}/{{num_snps}}/{{read_quality}}/{{coverage}}/{{denovo_kmer_size}}/map_with_discovery/updated_msas/{gene}/prg.fa",
+            gene=GENE_NAMES
+        )
+    output:
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa",
+    log:
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/combine_prgs_after_adding_denovo_paths.log"
+    shell:
+        """
+        cat {input} > {output} 2> {log}
+        """
+
+
+rule index_combined_prg_after_adding_denovo_paths:
+    input:
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa",
+    output:
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa.k15.w14.idx"
+    # singularity:
+    #     "shub://mbhall88/Singularity_recipes:pandora@ac594f67db8a2f66e1c5cc049cfe1968"
+    log:
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/index_combined_prg_after_adding_denovo_paths.log"
+    shell:
+        """
+        pandora index {input} &> {log}
         """
