@@ -6,7 +6,6 @@ rule build_initial_prg:
     params:
         script = "scripts/make_prg_from_msa.py",
         prefix = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg",
-        max_nesting_lvl = "{max_nesting_lvl}",
     singularity: CONDA_IMG
     conda:
         "../envs/make_prg.yaml"
@@ -14,9 +13,9 @@ rule build_initial_prg:
         "logs/{max_nesting_lvl}/{gene}_build_initial_prg.log"
     shell:
         """
-        python3 {params.script} --max_nesting {params.max_nesting_lvl} \
+        python3 {params.script} --max_nesting {wildcards.max_nesting_lvl} \
             --prefix {params.prefix} {input} 2> {log}
-        mv {params.prefix}.max_nest{params.max_nesting_lvl}.min_match7.prg {output.prg} 2>> {log}
+        mv {params.prefix}.max_nest{wildcards.max_nesting_lvl}.min_match7.prg {output.prg} 2>> {log}
         echo '>{wildcards.gene}' | cat - {output.prg} > temp && mv temp {output.prg} 2>> {log}
         echo '' >> {output.prg} 2>> {log}
         rm summary.tsv 2>> {log}
@@ -49,4 +48,27 @@ rule index_initial_combined_prg:
     shell:
         """
         pandora index {input} &> {log}
+        """
+
+rule build_prg_after_adding_denovo_paths:
+    input:
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.clustalo.fa"
+    output:
+        prg = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/prg.fa",
+    params:
+        script = "scripts/make_prg_from_msa.py",
+        prefix = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/prg",
+    singularity: CONDA_IMG
+    conda:
+        "../envs/make_prg.yaml"
+    log:
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/build_prg_after_adding_denovo_paths.log"
+    shell:
+        """
+        python3 {params.script} --max_nesting {wildcards.max_nesting_lvl} \
+            --prefix {params.prefix} {input} 2> {log}
+        mv {params.prefix}.max_nest{wildcards.max_nesting_lvl}.min_match7.prg {output.prg} 2>> {log}
+        echo '>{wildcards.gene}' | cat - {output.prg} > temp && mv temp {output.prg} 2>> {log}
+        echo '' >> {output.prg} 2>> {log}
+        rm summary.tsv 2>> {log}
         """

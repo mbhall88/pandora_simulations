@@ -18,9 +18,9 @@ rule add_denovo_paths_to_msa:
         denovo_dir = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/denovo_paths",
         msa = "data/realignments/{gene}.clustalo.fa"
     output:
-        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}_with_denovo_paths.msa.fa"
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.fa"
     log:
-        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}_add_denovo_to_msa.log"
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/add_denovo_to_msa.log"
     run:
         gene_paths = list(Path(input.denovo_dir).glob(f"{wildcards.gene}*.fa"))
         new_msa_path = Path(output[0])
@@ -46,12 +46,12 @@ rule add_denovo_paths_to_msa:
 
 rule run_msa_after_adding_denovo_paths:
     input:
-        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}_with_denovo_paths.msa.fa"
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.fa"
     output:
-        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}_with_denovo_paths.clustalo.fa"
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.clustalo.fa"
     threads: 2
     singularity: CONDA_IMG
     log:
-        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}_run_msa_after_adding_denovo_paths.log"
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/run_msa_after_adding_denovo_paths.log"
     wrapper:
         "0.32.0/bio/clustalo"
