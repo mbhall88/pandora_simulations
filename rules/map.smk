@@ -9,20 +9,22 @@ rule map_with_discovery:
         consensus = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora.consensus.fq.gz",
         genotype_vcf = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.vcf",
     params:
-        out_prefix = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/",
+        outdir = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/",
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery.log"
     shell:
         """
         genome_size=$(grep -v '>' {input.ref} | wc | awk '{{print $3-$1-10}}')
-        pandora map -p {input.prg} \
-            -r {input.reads} \
-            -o {params.out_prefix} \
+        pandora map --prg_file {input.prg} \
+            --read_file {input.reads} \
+            --outdir {params.outdir} \
             --output_kg \
             --output_covgs \
+            --max_covg {coverage} \
             --output_vcf \
             --genotype \
             --genome_size $genome_size \
             --discover \
+            --denovo_kmer_size {denovo_kmer_size} \
             --log_level debug &> {log}
         """
