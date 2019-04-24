@@ -22,7 +22,7 @@ rule build_initial_prg:
         tmp_fname={wildcards.gene}_tmp
         echo '>{wildcards.gene}' | cat - {output.prg} > "$tmp_fname" && mv "$tmp_fname" {output.prg} 2>> {log}
         echo '' >> {output.prg} 2>> {log}
-        rm summary.tsv 2>> {log}
+        rm -f summary.tsv 2>> {log}
         """
 
 
@@ -87,7 +87,7 @@ rule build_prg_after_adding_denovo_paths:
         tmp_fname={wildcards.gene}_tmp
         echo '>{wildcards.gene}' | cat - {output.prg} > "$tmp_fname" && mv "$tmp_fname" {output.prg} 2>> {log}
         echo '' >> {output.prg} 2>> {log}
-        rm summary.tsv 2>> {log}
+        rm -f summary.tsv 2>> {log}
         """
 
 
