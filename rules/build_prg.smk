@@ -19,7 +19,8 @@ rule build_initial_prg:
         python3 {params.script} --max_nesting {wildcards.max_nesting_lvl} \
             --prefix {params.prefix} {input} 2> {log}
         mv {params.prefix}.max_nest{wildcards.max_nesting_lvl}.min_match7.prg {output.prg} 2>> {log}
-        echo '>{wildcards.gene}' | cat - {output.prg} > temp && mv temp {output.prg} 2>> {log}
+        tmp_fname={wildcards.gene}_tmp
+        echo '>{wildcards.gene}' | cat - {output.prg} > "$tmp_fname" && mv "$tmp_fname" {output.prg} 2>> {log}
         echo '' >> {output.prg} 2>> {log}
         rm summary.tsv 2>> {log}
         """
@@ -83,7 +84,8 @@ rule build_prg_after_adding_denovo_paths:
         python3 {params.script} --max_nesting {wildcards.max_nesting_lvl} \
             --prefix {params.prefix} {input} 2> {log}
         mv {params.prefix}.max_nest{wildcards.max_nesting_lvl}.min_match7.prg {output.prg} 2>> {log}
-        echo '>{wildcards.gene}' | cat - {output.prg} > temp && mv temp {output.prg} 2>> {log}
+        tmp_fname={wildcards.gene}_tmp
+        echo '>{wildcards.gene}' | cat - {output.prg} > "$tmp_fname" && mv "$tmp_fname" {output.prg} 2>> {log}
         echo '' >> {output.prg} 2>> {log}
         rm summary.tsv 2>> {log}
         """
