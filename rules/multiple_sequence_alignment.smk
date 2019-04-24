@@ -4,6 +4,8 @@ rule dealign_original_msa:
     output:
         "data/realignments/{gene}.clustalo.fa"
     threads: 2
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 1000
     params:
         extra = "--dealign "
     singularity: CONDA_IMG
@@ -19,6 +21,9 @@ rule add_denovo_paths_to_msa:
         msa = "data/realignments/{gene}.clustalo.fa"
     output:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.fa"
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: 500
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/add_denovo_to_msa.log"
     run:
@@ -50,6 +55,8 @@ rule run_msa_after_adding_denovo_paths:
     output:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.clustalo.fa"
     threads: 2
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 1000
     singularity: CONDA_IMG
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/run_msa_after_adding_denovo_paths.log"

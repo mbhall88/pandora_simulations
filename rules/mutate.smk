@@ -4,6 +4,9 @@ rule mutate_random_path:
     output:
         sequences = "analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated_1.fasta",
         vcf = "analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated.vcf"
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 1000
     params:
         num_simulations = 1,
         extra = lambda wildcards: (

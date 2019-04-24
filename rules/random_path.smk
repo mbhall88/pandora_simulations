@@ -4,6 +4,9 @@ rule get_random_paths_from_prg:
         index = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa.k15.w14.idx"
     output:
         "analysis/{max_nesting_lvl}/random_paths.fa"
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 500
     params:
         num_paths = 1,
     # singularity:
@@ -22,6 +25,9 @@ rule join_random_paths_into_single_reference_sequence:
         "analysis/{max_nesting_lvl}/random_paths.fa"
     output:
         "analysis/{max_nesting_lvl}/combined_random_paths.fa"
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 500
     log:
         "logs/{max_nesting_lvl}/join_random_paths_into_single_reference_sequence.log"
     run:

@@ -6,6 +6,9 @@ rule build_initial_prg:
     params:
         script = "scripts/make_prg_from_msa.py",
         prefix = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg",
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: (1000 + (attempt * 1000)) ** attempt
     singularity: CONDA_IMG
     conda:
         "../envs/make_prg.yaml"
@@ -30,6 +33,9 @@ rule combine_prgs:
         )
     output:
         "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
+    threads: 1
+    resources:
+        mem_mb = 500
     log:
         "logs/{max_nesting_lvl}/combine_prgs.log"
     shell:
@@ -43,6 +49,9 @@ rule index_initial_combined_prg:
         "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
     output:
         "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa.k15.w14.idx"
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 2000
     # singularity:
     #     "shub://mbhall88/Singularity_recipes:pandora@ac594f67db8a2f66e1c5cc049cfe1968"
     log:
@@ -58,6 +67,9 @@ rule build_prg_after_adding_denovo_paths:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.clustalo.fa"
     output:
         prg = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/prg.fa",
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: (1000 + (attempt * 1000)) ** attempt
     params:
         script = "scripts/make_prg_from_msa.py",
         prefix = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/prg",
@@ -85,6 +97,9 @@ rule combine_prgs_after_adding_denovo_paths:
         )
     output:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa",
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: 500
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/combine_prgs_after_adding_denovo_paths.log"
     shell:
@@ -98,6 +113,9 @@ rule index_combined_prg_after_adding_denovo_paths:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa",
     output:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa.k15.w14.idx"
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 2000
     # singularity:
     #     "shub://mbhall88/Singularity_recipes:pandora@ac594f67db8a2f66e1c5cc049cfe1968"
     log:

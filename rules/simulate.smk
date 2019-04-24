@@ -5,6 +5,9 @@ rule simulate_reads:
         reads = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.fa",
         log = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.log",
         errors = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.errors.txt"
+    threads: 1
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 1000
     params:
         profile = "ecoli_R9_1D",
         perfect_reads = lambda wildcards: wildcards.read_quality == "perfect",
