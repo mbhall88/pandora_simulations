@@ -17,5 +17,4 @@ rule simulate_reads:
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/simulate_reads.log"
     wrapper:
-        "https://bitbucket.org/mbhall88/snakemake-wrappers/raw/f18bb46319967126a4671f2e6f22c5ce0f2702a0/bio/nanosim-h/wrapper.py"
-        # "0.32.0/bio/nanosim-h"
+        "0.33.0/bio/nanosim-h"
