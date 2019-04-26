@@ -59,7 +59,7 @@ rule index_initial_combined_prg:
         "logs/{max_nesting_lvl}/index_initial_combined_prg.log"
     shell:
         """
-        pandora index {input} &> {log}
+        pandora index --log_level debug {input} &> {log}
         """
 
 
@@ -124,5 +124,5 @@ rule index_combined_prg_after_adding_denovo_paths:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/index_combined_prg_after_adding_denovo_paths.log"
     shell:
         """
-        pandora index {input} &> {log}
+        pandora index --log_level debug {input} &> {log}
         """
