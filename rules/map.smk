@@ -10,7 +10,7 @@ rule map_with_discovery:
         genotype_vcf = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.vcf",
     threads: 1
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 2000
+        mem_mb = lambda wildcards, attempt: attempt * 8000
     params:
         outdir = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/",
     log:
