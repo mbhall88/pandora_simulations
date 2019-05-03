@@ -33,26 +33,10 @@ class Sequence(str):
         )
 
 
-# =================================================
-# test Sequence methods
-s = Sequence("0123456789")
-assert s.get_left_flank(0, 4) == "6789"
-assert s.get_left_flank(2, 4) == "8901"
-assert s.get_left_flank(9, 4) == "5678"
-assert s.get_right_flank(3, 4) == "4567"
-assert s.get_right_flank(8, 4) == "9012"
-assert s.get_right_flank(0, 4) == "1234"
-assert s.get_probe((5, 6), 4) == "123456789"
-assert s.get_probe((2, 3), 4) == "890123456"
-assert s.get_probe((7, 8), 4) == "345678901"
-assert s.get_probe((0, 2), 4) == "6789012345"
-assert s.get_probe((7, 9), 4) == "3456789012"
-# =================================================
-
-
 class BWA:
-    def __init__(self, threads: int):
+    def __init__(self, threads=1):
         self.threads = threads
+        self.reference = ""
 
     def index(self, reference):
         self.reference = reference
@@ -72,7 +56,12 @@ class BWA:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        self.alignment.check_returncode()
+
+        if self.alignment.returncode != 0:
+            if b"fail to locate the index" in self.alignment.stderr:
+                raise IndexError("Reference must be indexed by BWA before alignment.")
+            else:
+                self.alignment.check_returncode()
 
         return self._get_samfile()
 
@@ -104,7 +93,9 @@ class Reference:
         self.vcf = vcf
         self.sequence = sequence
 
-    def make_panel(self, output_path: Path, flank_width=REF_PANEL_FLANK_WIDTH):
+    def make_panel(
+        self, output_path: Path, flank_width=REF_PANEL_FLANK_WIDTH
+    ):
         with ExitStack() as stack:
             vcf = stack.enter_context(pysam.VariantFile(self.vcf))
             ref = stack.enter_context(pysam.FastxFile(str(self.sequence)))
@@ -128,11 +119,7 @@ class Reference:
                 panel.write(f"{probe_name}\n{probe}\n")
 
 
-def is_invalid_vcf_entry(entry: pysam.VariantRecord) -> bool:
-    return any(gt is None for gt in entry.samples["sample"]["GT"])
-
-
-class Query:
+class Query:  # TODO test
     def __init__(self, vcf: Path, genes: Path):
         self.vcf = Path(
             pysam.tabix_index(str(vcf), preset="vcf", keep_original=True, force=True)
@@ -142,7 +129,7 @@ class Query:
         self._min_probe_length = MIN_QUERY_PROBE_LEN
         self._entry_number = 0
 
-    def make_probes(self) -> str:
+    def make_probes(self) -> str:  # TODO test
         query_probes = ""
 
         with ExitStack() as stack:
@@ -165,23 +152,26 @@ class Query:
 
     def create_probes_for_gene_variants(
         self, gene: pysam.FastxRecord, variants: pysam.tabix_iterator
-    ) -> str:
+    ) -> str:  # TODO test
         probes = ""
 
         for variant in variants:
             if is_invalid_vcf_entry(variant):
                 continue
 
-            start, end = self.calculate_probe_boundaries_for_entry(variant)
+            left_idxs, right_idxs = self.calculate_probe_boundaries_for_entry(variant)
+            left_flank = gene.sequence[slice(*left_idxs)]
+            right_flank = gene.sequence[slice(*right_idxs)]
+
             probe = self.create_probe_for_variant(variant)
-            probe.set_sequence(gene.sequence[start:end])
+            probe.set_sequence(left_flank + get_variant_sequence(variant) + right_flank)
             probes += str(probe) + "\n"
 
         return probes
 
     def create_probe_for_variant(
         self, variant: pysam.VariantRecord
-    ) -> pysam.FastxRecord:
+    ) -> pysam.FastxRecord:  # TODO test
         probe = pysam.FastxRecord()
         probe.set_name(f"{variant.chrom}_pos{variant.pos}")
 
@@ -191,20 +181,55 @@ class Query:
             self._probe_names.add(probe.name)
             self._entry_number = 0
 
-        probe.set_name(probe.name + f"_entry{self._entry_number}")
+        probe.set_name(
+            probe.name
+            + f"_entry{self._entry_number}_CONF{get_genotype_confidence(variant)}"
+        )
 
         return probe
 
-    def calculate_probe_boundaries_for_entry(self, entry: pysam.VariantRecord) -> tuple:
-        start = entry.start
-        end = entry.stop
+    def calculate_probe_boundaries_for_entry(
+        self, entry: pysam.VariantRecord
+    ) -> tuple:
+        variant_len = get_variant_length(entry)
+        delta_len = self._min_probe_length - variant_len
+        left = [entry.start, entry.start]
+        right = [entry.stop, entry.stop]
+        variant_shorter_than_min_probe_len = delta_len > 0
 
-        if entry.rlen < self._min_probe_length:
-            diff = self._min_probe_length - entry.rlen
-            start = max(0, start - diff // 2)
-            end += diff // 2
+        if variant_shorter_than_min_probe_len:
+            flank_width = delta_len // 2
+            left[0] = max(0, entry.start - flank_width)
+            right[1] = entry.stop + flank_width
 
-        return start, end
+        return left, right
+
+
+def is_invalid_vcf_entry(entry: pysam.VariantRecord) -> bool:
+    genotype = get_genotype(entry)
+
+    return genotype is None
+
+
+def get_genotype_confidence(variant: pysam.VariantRecord) -> float:
+    return float(variant.samples["sample"].get("GT_CONF", 0))
+
+
+def get_genotype(variant: pysam.VariantRecord) -> int:
+    return variant.samples["sample"]["GT"][0]
+
+
+def get_variant_sequence(variant: pysam.VariantRecord) -> str:
+    genotype = get_genotype(variant)
+
+    if genotype is None:
+        return variant.ref
+    else:
+        return variant.alleles[genotype]
+
+
+def get_variant_length(variant: pysam.VariantRecord) -> int:
+    return len(get_variant_sequence(variant))
 
 
 def is_mapping_invalid(record: pysam.AlignedSegment) -> bool:
@@ -213,17 +238,17 @@ def is_mapping_invalid(record: pysam.AlignedSegment) -> bool:
 
 def is_snp_called_correctly(record: pysam.AlignedSegment) -> bool:
     expected_base = record.reference_name[-1]
-    snp_idx = 100 - record.reference_start
+    snp_idx = REF_PANEL_FLANK_WIDTH - record.reference_start
     actual_base = record.query_alignment_sequence[snp_idx]
     return expected_base == actual_base
 
 
-def map_probes_to_panel(probes: str, reference_panel: Path, threads: int) -> dict:
+def map_probes_to_panel(probes: str, reference_panel: Path, threads=1) -> dict:
     bwa = BWA(threads)
     bwa.index(reference_panel)
     header, sam = bwa.align(probes)
 
-    results = {"snps_called_correctly": [], "mismatches": []}
+    results = {"snps_called_correctly": [], "mismatches": [], "ids": []}
 
     valid_pandora_calls = 0
     sites_seen = set()
@@ -231,7 +256,7 @@ def map_probes_to_panel(probes: str, reference_panel: Path, threads: int) -> dic
     for record in sam:
         if is_mapping_invalid(record):
             continue
-        elif not record.reference_start <= 100 < record.reference_end:
+        elif not (record.reference_start <= 100 < record.reference_end):
             continue
         valid_pandora_calls += 1
 
@@ -240,6 +265,7 @@ def map_probes_to_panel(probes: str, reference_panel: Path, threads: int) -> dic
 
         results["snps_called_correctly"].append(is_snp_called_correctly(record))
         results["mismatches"].append(record.get_tag("NM"))
+        results["ids"].append(record.query_name)
 
     results["total_pandora_calls"] = len(sam)
     results["pandora_calls_crossing_ref_site"] = valid_pandora_calls
@@ -254,14 +280,14 @@ def write_results(results: dict, output: Path):
 
 
 def main():
-    reference_vcf = Path("combined_random_paths_mutated.vcf")
-    reference_seq = Path("combined_random_paths_mutated_1.fasta")
-    reference_panel = Path("panel.fa")
-    query_vcf = Path("pandora_genotyped.vcf")
-    pandora_consensus = Path("pandora.consensus.fq.gz")
+    reference_vcf = Path("test_cases/combined_random_paths_mutated.vcf")
+    reference_seq = Path("test_cases/combined_random_paths_mutated_1.fasta")
+    reference_panel = Path("test_cases/panel.fa")
+    query_vcf = Path("test_cases/pandora_genotyped.vcf")
+    pandora_consensus = Path("test_cases/pandora.consensus.fq.gz")
     threads = 1
     num_snps = 250
-    output = Path("output.json")
+    output = Path("test_cases/output.json")
 
     reference = Reference(reference_vcf, reference_seq)
 
