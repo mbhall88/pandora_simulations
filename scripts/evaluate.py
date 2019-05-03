@@ -93,9 +93,7 @@ class Reference:
         self.vcf = vcf
         self.sequence = sequence
 
-    def make_panel(
-        self, output_path: Path, flank_width=REF_PANEL_FLANK_WIDTH
-    ):
+    def make_panel(self, output_path: Path, flank_width=REF_PANEL_FLANK_WIDTH):
         with ExitStack() as stack:
             vcf = stack.enter_context(pysam.VariantFile(self.vcf))
             ref = stack.enter_context(pysam.FastxFile(str(self.sequence)))
@@ -188,9 +186,7 @@ class Query:  # TODO test
 
         return probe
 
-    def calculate_probe_boundaries_for_entry(
-        self, entry: pysam.VariantRecord
-    ) -> tuple:
+    def calculate_probe_boundaries_for_entry(self, entry: pysam.VariantRecord) -> tuple:
         variant_len = get_variant_length(entry)
         delta_len = self._min_probe_length - variant_len
         left = [entry.start, entry.start]
@@ -280,27 +276,17 @@ def write_results(results: dict, output: Path):
 
 
 def main():
-    reference_vcf = Path("test_cases/combined_random_paths_mutated.vcf")
-    reference_seq = Path("test_cases/combined_random_paths_mutated_1.fasta")
-    reference_panel = Path("test_cases/panel.fa")
-    query_vcf = Path("test_cases/pandora_genotyped.vcf")
-    pandora_consensus = Path("test_cases/pandora.consensus.fq.gz")
-    threads = 1
-    num_snps = 250
-    output = Path("test_cases/output.json")
-
-    reference = Reference(reference_vcf, reference_seq)
-
+    reference_panel = snakemake.output.reference_panel
+    reference = Reference(snakemake.input.reference_vcf, snakemake.input.reference_seq)
     reference.make_panel(reference_panel)
 
-    query = Query(query_vcf, pandora_consensus)
-
+    query = Query(snakemake.input.query_vcf, snakemake.input.pandora_consensus)
     query_probes = query.make_probes()
 
-    results = map_probes_to_panel(query_probes, reference_panel, threads)
-    results["total_reference_sites"] = num_snps
+    results = map_probes_to_panel(query_probes, reference_panel, snakemake.threads)
+    results["total_reference_sites"] = snakemake.wildcards.num_snps
 
-    write_results(results, output)
+    write_results(results, snakemake.output.results)
 
 
 if __name__ == "__main__":

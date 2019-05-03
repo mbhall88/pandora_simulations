@@ -159,3 +159,12 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+
+# index files
+*.amb
+*.ann
+*.bwt
+*.pac
+*.sa
+*.tbi

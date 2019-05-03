@@ -28,6 +28,7 @@ def retrieve_entry_from_test_query_vcf(idx: int) -> pysam.VariantRecord:
                 return record
     raise IndexError("You asked for an index that is beyond the number in the test VCF")
 
+
 def create_sam_header(name: str) -> pysam.AlignmentHeader:
     return pysam.AlignmentHeader.from_text(
         f"@SQ	SN:{name}	LN:201\n@PG	ID:bwa	PN:bwa	VN:0.7.17-r1188	CL:bwa mem -t 1 panel.fa -"
@@ -179,7 +180,9 @@ class TestReference:
 
 
 class TestQuery:
-    def test_calculateProbeBoundariesForEntry_variantShorterThanMinLen_returnProbeOfMinLen(self):
+    def test_calculateProbeBoundariesForEntry_variantShorterThanMinLen_returnProbeOfMinLen(
+        self
+    ):
         query = Query(TEST_QUERY_VCF, TEST_PANEL)
         query._min_probe_length = 10
         variant = retrieve_entry_from_test_query_vcf(1)
@@ -189,7 +192,9 @@ class TestQuery:
 
         assert actual == expected
 
-    def test_calculateProbeBoundariesForEntry_variantAtStartOfGene_returnZeroLenLeftProbe(self):
+    def test_calculateProbeBoundariesForEntry_variantAtStartOfGene_returnZeroLenLeftProbe(
+        self
+    ):
         query = Query(TEST_QUERY_VCF, TEST_PANEL)
         query._min_probe_length = 10
         variant = retrieve_entry_from_test_query_vcf(0)
@@ -199,7 +204,9 @@ class TestQuery:
 
         assert actual == expected
 
-    def test_calculateProbeBoundariesForEntry_variantLongerThanMinLen_returnZeroLenProbes(self):
+    def test_calculateProbeBoundariesForEntry_variantLongerThanMinLen_returnZeroLenProbes(
+        self
+    ):
         query = Query(TEST_QUERY_VCF, TEST_PANEL)
         query._min_probe_length = 2
         variant = retrieve_entry_from_test_query_vcf(1)
@@ -209,7 +216,9 @@ class TestQuery:
 
         assert actual == expected
 
-    def test_calculateProbeBoundariesForEntry_nonRefvariant_returnProbesRelativeToRef(self):
+    def test_calculateProbeBoundariesForEntry_nonRefvariant_returnProbesRelativeToRef(
+        self
+    ):
         query = Query(TEST_QUERY_VCF, TEST_PANEL)
         query._min_probe_length = 10
         variant = retrieve_entry_from_test_query_vcf(1)
@@ -225,7 +234,9 @@ class TestQuery:
         variant = retrieve_entry_from_test_query_vcf(0)
 
         expected = pysam.FastxRecord()
-        expected.set_name(f"GC00000001_155_pos1_entry0_CONF{get_genotype_confidence(variant)}")
+        expected.set_name(
+            f"GC00000001_155_pos1_entry0_CONF{get_genotype_confidence(variant)}"
+        )
         actual = query.create_probe_for_variant(variant)
 
         assert actual.name == expected.name
@@ -237,7 +248,9 @@ class TestQuery:
         variant = retrieve_entry_from_test_query_vcf(0)
 
         expected = pysam.FastxRecord()
-        expected.set_name(f"GC00000001_155_pos1_entry1_CONF{get_genotype_confidence(variant)}")
+        expected.set_name(
+            f"GC00000001_155_pos1_entry1_CONF{get_genotype_confidence(variant)}"
+        )
         actual = query.create_probe_for_variant(variant)
 
         assert actual.name == expected.name
@@ -258,7 +271,6 @@ class TestQuery:
         actual = query.make_probes()
 
         assert actual == expected
-
 
 
 def test_isInvalidVcfEntry_withNoneGenotype_returnTrue():
@@ -587,6 +599,7 @@ def test_mapProbesToPanel_oneRecordFirstBaseIsVariantSite():
     }
 
     assert actual == expected
+
 
 def test_writeResults():
     data = {"a": [1, 2, 3], "foo": "bar", "bool": [True, False]}
