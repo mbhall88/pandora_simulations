@@ -16,7 +16,7 @@ rule build_initial_prg:
         "logs/{max_nesting_lvl}/{gene}_build_initial_prg.log"
     shell:
         """
-        python3 {params.script} --max_nesting {wildcards.max_nesting_lvl} \
+        python3 {params.script} -v --max_nesting {wildcards.max_nesting_lvl} \
             --prefix {params.prefix} {input} 2> {log}
         mv {params.prefix}.max_nest{wildcards.max_nesting_lvl}.min_match7.prg {output.prg} 2>> {log}
         tmp_fname={wildcards.gene}_tmp
@@ -81,7 +81,7 @@ rule build_prg_after_adding_denovo_paths:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/build_prg_after_adding_denovo_paths.log"
     shell:
         """
-        python3 {params.script} --max_nesting {wildcards.max_nesting_lvl} \
+        python3 {params.script} -v --max_nesting {wildcards.max_nesting_lvl} \
             --prefix {params.prefix} {input} 2> {log}
         mv {params.prefix}.max_nest{wildcards.max_nesting_lvl}.min_match7.prg {output.prg} 2>> {log}
         tmp_fname={wildcards.gene}_tmp
