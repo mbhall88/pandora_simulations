@@ -8,7 +8,7 @@ rule build_initial_prg:
         prefix = "data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}/prg",
     threads: 1
     resources:
-        mem_mb = lambda wildcards, attempt: (1000 + (attempt * 1000)) ** attempt
+        mem_mb = lambda wildcards, attempt: (1000 + (attempt * 1000)) * attempt
     singularity: CONDA_IMG
     conda:
         "../envs/make_prg.yaml"
@@ -70,7 +70,7 @@ rule build_prg_after_adding_denovo_paths:
         prg = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/prg.fa",
     threads: 1
     resources:
-        mem_mb = lambda wildcards, attempt: (1000 + (attempt * 1000)) ** attempt
+        mem_mb = lambda wildcards, attempt: (1000 + (attempt * 1000)) * attempt
     params:
         script = "scripts/make_prg_from_msa.py",
         prefix = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/prg",
