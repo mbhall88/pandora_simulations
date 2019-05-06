@@ -41,7 +41,7 @@ rule combine_prgs:
         "logs/{max_nesting_lvl}/combine_prgs.log"
     shell:
         """
-        cat {input} > {output} 2> {log}
+        awk 1 {input} > {output} 2> {log}
         """
 
 
@@ -106,7 +106,7 @@ rule combine_prgs_after_adding_denovo_paths:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/combine_prgs_after_adding_denovo_paths.log"
     shell:
         """
-        cat {input} > {output} 2> {log}
+        awk 1 {input} > {output} 2> {log}
         """
 
 
