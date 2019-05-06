@@ -15,6 +15,7 @@ bsub -R "select[mem>$MEMORY] rusage[mem=$MEMORY]" \
     --cluster-config cluster.yaml \
     --jobs 2000 \
     --restart-times 3 \
+    --keep-going \
     --cluster "${CLUSTER_CMD[@]}"
 
 exit 0
