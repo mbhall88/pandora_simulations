@@ -18,9 +18,15 @@ rule map_with_discovery:
     shell:
         """
         genome_size=$(grep -v '>' {input.ref} | wc | awk '{{print $3-$1-10}}')
-        pandora map --prg_file {input.prg} \
-            --read_file {input.reads} \
-            --outdir {params.outdir} \
+        read_file=$(realpath {input.reads})
+        prg_file=$(realpath {input.prg})
+        log_file=$(realpath {log})
+        mkdir -p {params.outdir} 
+        cd {params.outdir} || exit 1
+        
+        pandora map --prg_file $prg_file \
+            --read_file $read_file \
+            --outdir $(pwd) \
             --output_kg \
             --output_covgs \
             --max_covg {wildcards.coverage} \
@@ -29,7 +35,7 @@ rule map_with_discovery:
             --genome_size $genome_size \
             --discover \
             --denovo_kmer_size {wildcards.denovo_kmer_size} \
-            --log_level debug &> {log}
+            --log_level debug &> $log_file
         """
 
 
