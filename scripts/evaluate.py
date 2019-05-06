@@ -117,7 +117,7 @@ class Reference:
                 panel.write(f"{probe_name}\n{probe}\n")
 
 
-class Query:  # TODO test
+class Query:
     def __init__(self, vcf: Path, genes: Path):
         self.vcf = Path(
             pysam.tabix_index(str(vcf), preset="vcf", keep_original=True, force=True)
@@ -127,7 +127,7 @@ class Query:  # TODO test
         self._min_probe_length = MIN_QUERY_PROBE_LEN
         self._entry_number = 0
 
-    def make_probes(self) -> str:  # TODO test
+    def make_probes(self) -> str:
         query_probes = ""
 
         with ExitStack() as stack:
@@ -150,7 +150,7 @@ class Query:  # TODO test
 
     def create_probes_for_gene_variants(
         self, gene: pysam.FastxRecord, variants: pysam.tabix_iterator
-    ) -> str:  # TODO test
+    ) -> str:
         probes = ""
 
         for variant in variants:
@@ -169,7 +169,7 @@ class Query:  # TODO test
 
     def create_probe_for_variant(
         self, variant: pysam.VariantRecord
-    ) -> pysam.FastxRecord:  # TODO test
+    ) -> pysam.FastxRecord:
         probe = pysam.FastxRecord()
         probe.set_name(f"{variant.chrom}_pos{variant.pos}")
 
@@ -276,17 +276,21 @@ def write_results(results: dict, output: Path):
 
 
 def main():
-    reference_panel = snakemake.output.reference_panel
-    reference = Reference(snakemake.input.reference_vcf, snakemake.input.reference_seq)
+    reference_panel = Path(snakemake.output.reference_panel)
+    reference = Reference(
+        Path(snakemake.input.reference_vcf), Path(snakemake.input.reference_seq)
+    )
     reference.make_panel(reference_panel)
 
-    query = Query(snakemake.input.query_vcf, snakemake.input.pandora_consensus)
+    query = Query(
+        Path(snakemake.input.query_vcf), Path(snakemake.input.pandora_consensus)
+    )
     query_probes = query.make_probes()
 
     results = map_probes_to_panel(query_probes, reference_panel, snakemake.threads)
     results["total_reference_sites"] = snakemake.wildcards.num_snps
 
-    write_results(results, snakemake.output.results)
+    write_results(results, Path(snakemake.output.results))
 
 
 if __name__ == "__main__":
