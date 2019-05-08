@@ -32,6 +32,18 @@ class Result:
         self.max_nesting = max_nesting
         self.data = dict()
 
+    def __eq__(self, other: "Result"):
+        return all(
+            [
+                self.denovo_kmer_size == other.denovo_kmer_size,
+                self.coverage == other.coverage,
+                self.read_quality == other.read_quality,
+                self.num_snps == other.num_snps,
+                self.max_nesting == other.max_nesting,
+                self.data == other.data,
+            ]
+        )
+
     def load_data_from_json(self, path: Path):
         with path.open() as json_file:
             self.data = json.load(json_file)
@@ -71,3 +83,21 @@ class Result:
             num_snps=int(path.parts[-6]),
             max_nesting=int(path.parts[-7]),
         )
+
+    @staticmethod
+    def from_dict(data: dict) -> "Result":
+        return Result(
+            data.get("denovo_kmer_size", 0),
+            data.get("coverage", 0),
+            data.get("read_quality", ""),
+            data.get("num_snps", 0),
+            data.get("max_nesting", 0),
+        )
+
+    @staticmethod
+    def from_json(path: Path) -> "Result":
+        data = Result.extract_parameters_from_path(path)
+        result = Result.from_dict(data)
+        result.load_data_from_json(path)
+
+        return result

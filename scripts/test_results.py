@@ -6,6 +6,7 @@ TEST_CASES = Path("scripts/test_cases")
 EMPTY_JSON = TEST_CASES / "empty.json"
 TEST_JSON = TEST_CASES / "test.json"
 
+
 class TestVariantCall:
     def test_equality_twoEqualVariantCalls_returnTrue(self):
         var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0)
@@ -33,6 +34,38 @@ class TestVariantCall:
 
 
 class TestResult:
+    def test_equality_twoEqualResults_returnTrue(self):
+        result1 = Result(coverage=55, num_snps=8)
+        result1.data = dict(test="foobar")
+        result2 = Result(coverage=55, num_snps=8)
+        result2.data = dict(test="foobar")
+
+        assert result1 == result2
+
+    def test_equality_twoNonEqualResults_returnFalse(self):
+        result1 = Result(coverage=55, num_snps=8, read_quality="perfect")
+        result1.data = dict(test="foobar")
+        result2 = Result(coverage=55, num_snps=8)
+        result2.data = dict(test="foobar")
+
+        assert not result1 == result2
+
+    def test_nonEquality_twoEqualResults_returnFalse(self):
+        result1 = Result(coverage=55, num_snps=8)
+        result1.data = dict(test="foobar")
+        result2 = Result(coverage=55, num_snps=8)
+        result2.data = dict(test="foobar")
+
+        assert not result1 != result2
+
+    def test_nonEquality_twoNonEqualResults_returnTrue(self):
+        result1 = Result(coverage=55, num_snps=8, read_quality="perfect")
+        result1.data = dict(test="foobar")
+        result2 = Result(coverage=55, num_snps=8)
+        result2.data = dict(test="foobar")
+
+        assert result1 != result2
+
     def test_loadDataFromJson_emptyJsonReturnsEmptyData(self):
         result = Result()
         result.load_data_from_json(EMPTY_JSON)
@@ -112,5 +145,25 @@ class TestResult:
             num_snps=6,
             max_nesting=1,
         )
+
+        assert actual == expected
+
+    def test_fromDict_emptyDict_returnEmptyResult(self):
+        actual = Result.from_dict(dict())
+        expected = Result()
+
+        assert actual == expected
+
+    def test_fromDict_dictWithAllParams_returnResultWithSameParams(self):
+        actual = Result.from_dict(
+            dict(
+                denovo_kmer_size=11,
+                coverage=50,
+                read_quality="perfect",
+                num_snps=6,
+                max_nesting=1,
+            )
+        )
+        expected = Result(11, 50, "perfect", 6, 1)
 
         assert actual == expected
