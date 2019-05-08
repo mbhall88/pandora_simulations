@@ -1,0 +1,15 @@
+{
+  "reference_sites_called": 7,
+  "ids": [
+    "id1_pos1_entry0_CONF3",
+    "id2_pos2_entry1_CONF5.6"
+  ],
+  "snps_called_correctly": [
+    true,
+    false
+  ],
+  "mismatches": [
+    0,
+    3
+  ]
+}

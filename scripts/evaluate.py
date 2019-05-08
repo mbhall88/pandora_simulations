@@ -235,7 +235,7 @@ def is_mapping_invalid(record: pysam.AlignedSegment) -> bool:
 def is_snp_called_correctly(record: pysam.AlignedSegment) -> bool:
     expected_base = record.reference_name[-1]
     snp_idx = REF_PANEL_FLANK_WIDTH - record.reference_start
-    actual_base = record.query_alignment_sequence[snp_idx]
+    actual_base = record.query_alignment_sequence[snp_idx]  # TODO this is returning an index out of range error sometimes
     return expected_base == actual_base
 
 
