@@ -29,9 +29,9 @@ def retrieve_entry_from_test_query_vcf(idx: int) -> pysam.VariantRecord:
     raise IndexError("You asked for an index that is beyond the number in the test VCF")
 
 
-def create_sam_header(name: str) -> pysam.AlignmentHeader:
+def create_sam_header(name: str, length: int) -> pysam.AlignmentHeader:
     return pysam.AlignmentHeader.from_text(
-        f"@SQ	SN:{name}	LN:201\n@PG	ID:bwa	PN:bwa	VN:0.7.17-r1188	CL:bwa mem -t 1 panel.fa -"
+        f"@SQ	SN:{name}	LN:{length}\n@PG	ID:bwa	PN:bwa	VN:0.7.17-r1188	CL:bwa mem -t 1 panel.fa -"
     )
 
 
@@ -347,7 +347,7 @@ def test_getVariantLength_genotypeZero_returnRef():
 
 
 def test_isMappingInvalid_unmappedEntry_returnTrue():
-    header = create_sam_header("C15154T")
+    header = create_sam_header("C15154T", 201)
     record = pysam.AlignedSegment.fromstring(
         "GC00004785_pos200_entry0	4	C15154T	124	48	69M	*	0	0	CAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCCCAGGACTATTTTGATTGCCTGCGCTGCTT	*	NM:i:0	MD:Z:69	AS:i:69	XS:i:53",
         header,
@@ -357,7 +357,7 @@ def test_isMappingInvalid_unmappedEntry_returnTrue():
 
 
 def test_isMappingInvalid_mappedEntry_returnFalse():
-    header = create_sam_header("C15154T")
+    header = create_sam_header("C15154T", 201)
     record = pysam.AlignedSegment.fromstring(
         "GC00004785_pos200_entry0	0	C15154T	124	48	69M	*	0	0	CAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCCCAGGACTATTTTGATTGCCTGCGCTGCTT	*	NM:i:0	MD:Z:69	AS:i:69	XS:i:53",
         header,
@@ -368,7 +368,7 @@ def test_isMappingInvalid_mappedEntry_returnFalse():
 
 
 def test_isMappingInvalid_supplementaryEntry_returnTrue():
-    header = create_sam_header("C15154T")
+    header = create_sam_header("C15154T", 201)
     record = pysam.AlignedSegment.fromstring(
         "GC00004785_pos200_entry0	2048	C15154T	124	48	69M	*	0	0	CAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCCCAGGACTATTTTGATTGCCTGCGCTGCTT	*	NM:i:0	MD:Z:69	AS:i:69	XS:i:53",
         header,
@@ -378,7 +378,7 @@ def test_isMappingInvalid_supplementaryEntry_returnTrue():
 
 
 def test_isMappingInvalid_secondaryEntry_returnTrue():
-    header = create_sam_header("C15154T")
+    header = create_sam_header("C15154T", 201)
     record = pysam.AlignedSegment.fromstring(
         "GC00004785_pos200_entry0	256	C15154T	124	48	69M	*	0	0	CAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCCCAGGACTATTTTGATTGCCTGCGCTGCTT	*	NM:i:0	MD:Z:69	AS:i:69	XS:i:53",
         header,
@@ -388,7 +388,7 @@ def test_isMappingInvalid_secondaryEntry_returnTrue():
 
 
 def test_isSnpCalledCorrectly_correctBaseInQuery_returnTrue():
-    header = create_sam_header("C15154T")
+    header = create_sam_header("C15154T", 201)
     record = pysam.AlignedSegment.fromstring(
         "GC00004785_pos168_entry0	0	C15154T	94	0	70M	*	0	0	GAAAGCATTACGCCCACAAATCTATGCTGCCAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCC	*	NM:i:1	MD:Z:0A69	AS:i:69	XS:i:69	XA:Z:C15129A,+119,70M,1;",
         header,
@@ -398,7 +398,7 @@ def test_isSnpCalledCorrectly_correctBaseInQuery_returnTrue():
 
 
 def test_isSnpCalledCorrectly_incorrectBaseInQueryByChangingRef_returnFalse():
-    header = create_sam_header("C15154A")
+    header = create_sam_header("C15154A", 201)
     record = pysam.AlignedSegment.fromstring(
         "GC00004785_pos168_entry0	0	C15154A	94	0	70M	*	0	0	GAAAGCATTACGCCCACAAATCTATGCTGCCAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCC	*	NM:i:1	MD:Z:0A69	AS:i:69	XS:i:69	XA:Z:C15129A,+119,70M,1;",
         header,
@@ -408,7 +408,7 @@ def test_isSnpCalledCorrectly_incorrectBaseInQueryByChangingRef_returnFalse():
 
 
 def test_isSnpCalledCorrectly_incorrectBaseInQueryByChangingQuery_returnFalse():
-    header = create_sam_header("C15154T")
+    header = create_sam_header("C15154T", 201)
     record = pysam.AlignedSegment.fromstring(
         "GC00004785_pos168_entry0	0	C15154T	94	0	70M	*	0	0	GAAAGCAATACGCCCACAAATCTATGCTGCCAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCC	*	NM:i:1	MD:Z:0A69	AS:i:69	XS:i:69	XA:Z:C15129A,+119,70M,1;",
         header,
@@ -611,3 +611,33 @@ def test_writeResults():
     actual = output.read_text()
 
     assert actual == expected
+
+
+def test_candidateContainsExpectedSnp_correctSnpCalled_returnTrue():
+    header = create_sam_header("GC00001889_1.0", 978)
+    record = pysam.AlignedSegment.fromstring(
+        "T36234G	0	GC00001889_1.0	710	60	201M	*	0	0	TTGCCGGTCTGTTTATTGCTATCGGTCACAGCCCGAATACTGCGATTTTCGGAGGGCAGCTGGAACTGGAAAGCGGCTACATCAAAGTACAGTCGGGCATGCATGGTAATGCCACCCAGACCAGCATCCCTGGCGTCTTTGCCGCAGGCGACGTGATGGATCACATTTATCGCCAGGCTATTACCTCGGCCGGTACAGGCT	*	NM:i:1	MD:Z:25C175	AS:i:196	XS:i:0",
+        header,
+    )
+
+    assert candidate_contains_expected_snp(record)
+
+
+def test_candidateContainsExpectedSnp_incorrectSnpCalled_returnFalse():
+    header = create_sam_header("GC00000001_27.0", 1824)
+    record = pysam.AlignedSegment.fromstring(
+        "T25983C	0	GC00000001_27.0	440	60	201M	*	0	0	CCATGGTGATGGCCACAGTGGATTACGTGGATGACAAACTGAAAGAGCATGAACAGTCACGACGTCACCCGGATGCCTCGCTGACCACAAAAGGTTTTACCCAGTTAACCAGCGACACCACCAGTACATCAGAGACCCGGGCAGCCACGCCAAAGGCCATAAAGATCGCCATGGACAACGCTGATGGTCGGCTTGCGAAAA	*	NM:i:2	MD:Z:100T7G92	AS:i:191	XS:i:0",
+        header,
+    )
+
+    assert not candidate_contains_expected_snp(record)
+
+
+def test_candidateContainsExpectedSnp_variantInSoftClippedRegion_returnFalse():
+    header = create_sam_header("GC00000001_27.0", 1824)
+    record = pysam.AlignedSegment.fromstring(
+        "A25435C	0	GC00000001_27.0	1	60	109S92M	*	0	0	CGGTAAAAGTAAAGTCTATAGCTACTTCTGGTTTTTTATCTGGTTTTTTGTTTTTAACTGTGCTGTTTATTCTTCTCTGAAGACAATAAATATAAAGGATCTAATCAGCATGAGTACCACAACACGAAAATTTAAAACCGTTATCACCGATACGGGTGCAAAAAAATTAGCTCAGGCAGCCGCGCCAGATGGTAAGCCTGT	*	NM:i:0	MD:Z:92	AS:i:92	XS:i:0",
+        header,
+    )
+
+    assert not candidate_contains_expected_snp(record)

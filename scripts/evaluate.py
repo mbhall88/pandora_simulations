@@ -3,6 +3,7 @@ from contextlib import ExitStack
 import subprocess
 import pysam
 import json
+from typing import List
 
 REF_PANEL_FLANK_WIDTH = 100
 MIN_QUERY_PROBE_LEN = 70
@@ -38,7 +39,7 @@ class BWA:
         self.threads = threads
         self.reference = ""
 
-    def index(self, reference):
+    def index(self, reference: str):
         self.reference = reference
 
         completed_process = subprocess.run(
@@ -235,7 +236,9 @@ def is_mapping_invalid(record: pysam.AlignedSegment) -> bool:
 def is_snp_called_correctly(record: pysam.AlignedSegment) -> bool:
     expected_base = record.reference_name[-1]
     snp_idx = REF_PANEL_FLANK_WIDTH - record.reference_start
-    actual_base = record.query_alignment_sequence[snp_idx]  # TODO this is returning an index out of range error sometimes
+    actual_base = record.query_alignment_sequence[
+        snp_idx
+    ]  # TODO this is returning an index out of range error sometimes
     return expected_base == actual_base
 
 
@@ -275,6 +278,50 @@ def write_results(results: dict, output: Path):
         json.dump(results, fh, indent=4)
 
 
+def candidate_contains_expected_snp(record) -> bool:
+    expected_base = record.query_name[-1]
+    query_pos, ref_pos, ref_base = record.get_aligned_pairs(with_seq=True)[
+        REF_PANEL_FLANK_WIDTH
+    ]
+    assert query_pos == REF_PANEL_FLANK_WIDTH
+
+    return expected_base == ref_base
+
+
+def evaluate_candidates(candidate_files: List[Path], panel: str, threads: int) -> dict:
+    probes_mapped_to_candidate = dict()
+    slices_containing_mutation = set()
+
+    for candidate in candidate_files:
+        bwa = BWA(threads)
+        bwa.index(str(candidate))
+        header, sam = bwa.align(panel)
+
+        for entry in sam:
+            if entry.is_unmapped or (
+                entry.query_name in probes_mapped_to_candidate
+                and probes_mapped_to_candidate[entry.query_name]
+            ):
+                continue
+
+            if candidate_contains_expected_snp(entry):
+                probes_mapped_to_candidate[entry.query_name] = True
+                slices_containing_mutation.add(candidate)
+            else:
+                probes_mapped_to_candidate[entry.query_name] = False
+
+    results = dict(
+        slices_containing_mutation=len(slices_containing_mutation),
+        total_slices=len(candidate_files),
+        variant_sites_denovo_ran_on=len(probes_mapped_to_candidate),
+        variant_sites_denovo_correctly_discovered=sum(
+            probes_mapped_to_candidate.values()
+        ),
+    )
+
+    return results
+
+
 def main():
     reference_panel = Path(snakemake.output.reference_panel)
     reference = Reference(
@@ -287,8 +334,14 @@ def main():
     )
     query_probes = query.make_probes()
 
-    results = map_probes_to_panel(query_probes, reference_panel, snakemake.threads)
-    results["total_reference_sites"] = snakemake.wildcards.num_snps
+    probe_results = map_probes_to_panel(query_probes, reference_panel, snakemake.threads)
+    probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
+
+    panel = reference_panel.read_text()
+    candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
+    candidate_results = evaluate_candidates(candidate_files, panel, snakemake.threads)
+
+    results = {**probe_results, **candidate_results}
 
     write_results(results, Path(snakemake.output.results))
 
