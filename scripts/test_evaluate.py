@@ -406,6 +406,7 @@ def test_isSnpCalledCorrectly_incorrectBaseInQueryByChangingQuery_returnFalse():
 
     assert not is_snp_called_correctly(record)
 
+
 def test_isSnpCalledCorrectly_recordWithDeletionsButIncorrectBase_returnFalse():
     header = create_sam_header("G27981T", 201)
     record = pysam.AlignedSegment.fromstring(
@@ -414,6 +415,7 @@ def test_isSnpCalledCorrectly_recordWithDeletionsButIncorrectBase_returnFalse():
     )
 
     assert not is_snp_called_correctly(record)
+
 
 def test_isSnpCalledCorrectly_recordWithDeletionsButCorrectBase_returnTrue():
     header = create_sam_header("G27981T", 201)
@@ -645,6 +647,16 @@ def test_candidateContainsExpectedSnp_variantInSoftClippedRegion_returnFalse():
     header = create_sam_header("GC00000001_27.0", 1824)
     record = pysam.AlignedSegment.fromstring(
         "A25435C	0	GC00000001_27.0	1	60	109S92M	*	0	0	CGGTAAAAGTAAAGTCTATAGCTACTTCTGGTTTTTTATCTGGTTTTTTGTTTTTAACTGTGCTGTTTATTCTTCTCTGAAGACAATAAATATAAAGGATCTAATCAGCATGAGTACCACAACACGAAAATTTAAAACCGTTATCACCGATACGGGTGCAAAAAAATTAGCTCAGGCAGCCGCGCCAGATGGTAAGCCTGT	*	NM:i:0	MD:Z:92	AS:i:92	XS:i:0",
+        header,
+    )
+
+    assert not candidate_contains_expected_snp(record)
+
+
+def test_candidateContainsExpectedSnp_variantPositionNotInAlignment_returnFalse():
+    header = create_sam_header("GC00000001_155.0", 1824)
+    record = pysam.AlignedSegment.fromstring(
+        "G6912T	2048	GC00000001_155.0	1698	0	112H89M	*	0	0	TCAGCTCAGTAGCGACACCAACAGCACTTCTGAAACATTAGCTGCAACTCCAAAAGCGGTTAAAGCTGCATACGATCTAGCAGCCGGAA	*	NM:i:1	MD:Z:48G40	AS:i:84	XS:i:84	SA:Z:GC00000001_155.0,1754,+,146M55S,3,6;	XA:Z:GC00000001_155.0,+1098,112S89M,1;GC00000001_155.0,+1398,112S89M,1;GC00000001_155.0,+798,112S89M,1;",
         header,
     )
 

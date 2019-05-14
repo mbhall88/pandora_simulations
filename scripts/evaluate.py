@@ -244,7 +244,7 @@ def is_snp_called_correctly(record: pysam.AlignedSegment) -> bool:
 
 def map_probes_to_panel(probes: str, reference_panel: Path, threads=1) -> dict:
     bwa = BWA(threads)
-    bwa.index(reference_panel)
+    bwa.index(str(reference_panel))
     header, sam = bwa.align(probes)
 
     results = {"snps_called_correctly": [], "mismatches": [], "ids": []}
@@ -280,12 +280,12 @@ def write_results(results: dict, output: Path):
 
 def candidate_contains_expected_snp(record) -> bool:
     expected_base = record.query_name[-1]
-    query_pos, ref_pos, ref_base = record.get_aligned_pairs(with_seq=True)[
-        REF_PANEL_FLANK_WIDTH
-    ]
-    assert query_pos == REF_PANEL_FLANK_WIDTH
 
-    return expected_base == ref_base
+    for query_pos, ref_pos, ref_base in record.get_aligned_pairs(with_seq=True):
+        if query_pos == REF_PANEL_FLANK_WIDTH:
+            return expected_base == ref_base
+
+    return False
 
 
 def evaluate_candidates(candidate_files: List[Path], panel: str, threads: int) -> dict:
@@ -334,7 +334,9 @@ def main():
     )
     query_probes = query.make_probes()
 
-    probe_results = map_probes_to_panel(query_probes, reference_panel, snakemake.threads)
+    probe_results = map_probes_to_panel(
+        query_probes, reference_panel, snakemake.threads
+    )
     probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
 
     panel = reference_panel.read_text()
