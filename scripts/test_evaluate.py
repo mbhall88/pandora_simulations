@@ -397,24 +397,32 @@ def test_isSnpCalledCorrectly_correctBaseInQuery_returnTrue():
     assert is_snp_called_correctly(record)
 
 
-def test_isSnpCalledCorrectly_incorrectBaseInQueryByChangingRef_returnFalse():
-    header = create_sam_header("C15154A", 201)
-    record = pysam.AlignedSegment.fromstring(
-        "GC00004785_pos168_entry0	0	C15154A	94	0	70M	*	0	0	GAAAGCATTACGCCCACAAATCTATGCTGCCAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCC	*	NM:i:1	MD:Z:0A69	AS:i:69	XS:i:69	XA:Z:C15129A,+119,70M,1;",
-        header,
-    )
-
-    assert not is_snp_called_correctly(record)
-
-
 def test_isSnpCalledCorrectly_incorrectBaseInQueryByChangingQuery_returnFalse():
     header = create_sam_header("C15154T", 201)
     record = pysam.AlignedSegment.fromstring(
-        "GC00004785_pos168_entry0	0	C15154T	94	0	70M	*	0	0	GAAAGCAATACGCCCACAAATCTATGCTGCCAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCC	*	NM:i:1	MD:Z:0A69	AS:i:69	XS:i:69	XA:Z:C15129A,+119,70M,1;",
+        "GC00004785_pos168_entry0	0	C15154T	94	0	70M	*	0	0	GAAAGCAATACGCCCACAAATCTATGCTGCCAAATCGGAAGCTAACAGAGCCAATACGCGCCTTGACGCC	*	NM:i:2	MD:Z:0A6T62	AS:i:69	XS:i:69	XA:Z:C15129A,+119,70M,1;",
         header,
     )
 
     assert not is_snp_called_correctly(record)
+
+def test_isSnpCalledCorrectly_recordWithDeletionsButIncorrectBase_returnFalse():
+    header = create_sam_header("G27981T", 201)
+    record = pysam.AlignedSegment.fromstring(
+        "GC00002440_3_pos672_entry0_CONF60.7373	0	G27981T	31	60	33M3D36M	*	0	0	GTAATTGGTTCTTAGAGCAGCATATTTATGATCTTTTTGCTATTGTGGATGAACGACACTATAAGCAGT	*	NM:i:4	MD:Z:33^TTT34T1	AS:i:58	XS:i:0",
+        header,
+    )
+
+    assert not is_snp_called_correctly(record)
+
+def test_isSnpCalledCorrectly_recordWithDeletionsButCorrectBase_returnTrue():
+    header = create_sam_header("G27981T", 201)
+    record = pysam.AlignedSegment.fromstring(
+        "GC00002440_3_pos672_entry0_CONF60.7373	0	G27981T	31	60	33M3D36M	*	0	0	GTAATTGGTTCTTAGAGCAGCATATTTATGATCTTTTTGCTATTGTGGATGAACGACACTATAAGCATT	*	NM:i:3	MD:Z:33^TTT36	AS:i:58	XS:i:0",
+        header,
+    )
+
+    assert is_snp_called_correctly(record)
 
 
 def test_mapProbesToPanel_oneRecordPerfectMapping():

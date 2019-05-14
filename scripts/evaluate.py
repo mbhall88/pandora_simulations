@@ -234,12 +234,12 @@ def is_mapping_invalid(record: pysam.AlignedSegment) -> bool:
 
 
 def is_snp_called_correctly(record: pysam.AlignedSegment) -> bool:
-    expected_base = record.reference_name[-1]
-    snp_idx = REF_PANEL_FLANK_WIDTH - record.reference_start
-    actual_base = record.query_alignment_sequence[
-        snp_idx
-    ]  # TODO this is returning an index out of range error sometimes
-    return expected_base == actual_base
+    for query_pos, ref_pos, ref_base in record.get_aligned_pairs(with_seq=True):
+        if ref_pos == 100:
+            if ref_base.islower():
+                return False
+            else:
+                return True
 
 
 def map_probes_to_panel(probes: str, reference_panel: Path, threads=1) -> dict:
