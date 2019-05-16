@@ -124,6 +124,23 @@ class Result:
         except ZeroDivisionError:
             return 0.0
 
+    def as_dict(self) -> dict:
+        """Returns a dict representation.
+        The contents of this dict were chosen for the purposes of creating a pandas
+        dataframe to use for plotting results.
+        """
+        return dict(
+            denovo_precision=self.denovo_precision(),
+            denovo_recall=self.denovo_recall(),
+            overall_recall=self.overall_recall(),
+            overall_precision=self.overall_precision(),
+            denovo_kmer_size=self.denovo_kmer_size,
+            num_snps=self.num_snps,
+            coverage=self.coverage,
+            max_nesting=self.max_nesting,
+            read_quality=self.read_quality,
+        )
+
     @staticmethod
     def extract_parameters_from_path(path: Path) -> dict:
         """Extracts the simulation parameters from a given path.
