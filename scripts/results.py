@@ -99,11 +99,15 @@ class Result:
         except ZeroDivisionError:
             return 0.0
 
-    def overall_recall(self) -> float:
+    def overall_recall(self, conf_threshold=0) -> float:
         """True variants called relative to all variants
         Calculation: TP/TP+FN
         """
-        true_positives = sum(variant.correct for variant in self.get_variant_calls())
+        true_positives = sum(
+            variant.correct
+            for variant in self.get_variant_calls()
+            if variant.confidence >= conf_threshold
+        )
         false_negatives = self.num_snps - self.unique_snps_called()
 
         try:
@@ -111,11 +115,15 @@ class Result:
         except ZeroDivisionError:
             return 0.0
 
-    def overall_precision(self) -> float:
+    def overall_precision(self, conf_threshold=0) -> float:
         """True variants called relative to total calls
         Calculation: TP/TP+FP
         """
-        are_calls_correct = [variant.correct for variant in self.get_variant_calls()]
+        are_calls_correct = [
+            variant.correct
+            for variant in self.get_variant_calls()
+            if variant.confidence >= conf_threshold
+        ]
         true_positives = are_calls_correct.count(True)
         false_positives = are_calls_correct.count(False)
 
@@ -124,7 +132,7 @@ class Result:
         except ZeroDivisionError:
             return 0.0
 
-    def as_dict(self) -> dict:
+    def as_dict(self, conf_threshold=0) -> dict:
         """Returns a dict representation.
         The contents of this dict were chosen for the purposes of creating a pandas
         dataframe to use for plotting results.
@@ -132,8 +140,8 @@ class Result:
         return dict(
             denovo_precision=self.denovo_precision(),
             denovo_recall=self.denovo_recall(),
-            overall_recall=self.overall_recall(),
-            overall_precision=self.overall_precision(),
+            overall_recall=self.overall_recall(conf_threshold),
+            overall_precision=self.overall_precision(conf_threshold),
             denovo_kmer_size=self.denovo_kmer_size,
             num_snps=self.num_snps,
             coverage=self.coverage,
