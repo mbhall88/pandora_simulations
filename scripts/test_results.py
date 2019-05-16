@@ -167,3 +167,137 @@ class TestResult:
         expected = Result(11, 50, "perfect", 6, 1)
 
         assert actual == expected
+
+    def test_denovoRecall_noVariantSitesCalledCorrectly_returnZero(self):
+        result = Result.from_dict(dict(num_snps=50))
+
+        actual = result.denovo_recall()
+        expected = 0.0
+
+        assert actual == expected
+
+    def test_denovoRecall_numSnpsIsZero_returnZero(self):
+        result = Result.from_dict(dict(num_snps=0))
+        result.data = dict(variant_sites_denovo_correctly_discovered=4)
+
+        actual = result.denovo_recall()
+        expected = 0.0
+
+        assert actual == expected
+
+    def test_denovoRecall_halfSnpsCalledCorrectly_returnHalf(self):
+        result = Result.from_dict(dict(num_snps=50))
+        result.data = dict(variant_sites_denovo_correctly_discovered=25)
+
+        actual = result.denovo_recall()
+        expected = 0.5
+
+        assert actual == expected
+
+    def test_denovoPrecision_allZeroes_returnZero(self):
+        result = Result()
+
+        actual = result.denovo_precision()
+        expected = 0.0
+
+        assert actual == expected
+
+    def test_denovoPrecision_halfSlicesWIthCorectSnp_returnHalf(self):
+        result = Result()
+        result.data = dict(
+            variant_sites_denovo_correctly_discovered=25, total_slices=50
+        )
+
+        actual = result.denovo_precision()
+        expected = 0.5
+
+        assert actual == expected
+
+    def test_overallRecall_noFalseNegatives_returnOne(self):
+        result = Result.from_dict(dict(num_snps=5))
+        result.data = dict(reference_sites_called=5,
+                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+                           snps_called_correctly=[True, False],
+                           mismatches=[0, 2])
+
+        actual = result.overall_recall()
+        expected = 1.0
+
+        assert actual == expected
+
+    def test_overallRecall_noTruePositives_returnZero(self):
+        result = Result.from_dict(dict(num_snps=5))
+        result.data = dict(reference_sites_called=0,
+                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+                           snps_called_correctly=[False, False],
+                           mismatches=[1, 2])
+
+        actual = result.overall_recall()
+        expected = 0.0
+
+        assert actual == expected
+
+    def test_overallRecall_allZeroes_returnZero(self):
+        result = Result.from_dict(dict(num_snps=0))
+
+        actual = result.overall_recall()
+        expected = 0.0
+
+        assert actual == expected
+
+    def test_overallRecall_halfTrueVariants_returnHalf(self):
+        result = Result.from_dict(dict(num_snps=4))
+        result.data = dict(reference_sites_called=2,
+                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+                           snps_called_correctly=[True, True],
+                           mismatches=[1, 2])
+
+        actual = result.overall_recall()
+        expected = 0.5
+
+        assert actual == expected
+
+
+    def test_overallPrecision_halfTrueVariants_returnHalf(self):
+        result = Result.from_dict(dict(num_snps=4))
+        result.data = dict(reference_sites_called=2,
+                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+                           snps_called_correctly=[True, False],
+                           mismatches=[1, 2])
+
+        actual = result.overall_precision()
+        expected = 0.5
+
+        assert actual == expected
+
+    def test_overallPrecision_noFalsePositives_returnOne(self):
+        result = Result.from_dict(dict(num_snps=5))
+        result.data = dict(reference_sites_called=5,
+                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+                           snps_called_correctly=[True, True],
+                           mismatches=[0, 2])
+
+        actual = result.overall_precision()
+        expected = 1.0
+
+        assert actual == expected
+
+    def test_overallPrecision_noTruePositives_returnZero(self):
+        result = Result.from_dict(dict(num_snps=5))
+        result.data = dict(reference_sites_called=0,
+                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+                           snps_called_correctly=[False, False],
+                           mismatches=[1, 2])
+
+        actual = result.overall_precision()
+        expected = 0.0
+
+        assert actual == expected
+
+    def test_overallPrecision_allZeroes_returnZero(self):
+        result = Result.from_dict(dict(num_snps=0))
+
+        actual = result.overall_precision()
+        expected = 0.0
+
+        assert actual == expected

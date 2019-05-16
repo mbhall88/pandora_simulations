@@ -51,6 +51,18 @@ class Result:
     def unique_snps_called(self) -> int:
         return self.data.get("reference_sites_called", 0)
 
+    def total_denovo_slices(self) -> int:
+        return self.data.get("total_slices", 0)
+
+    def denovo_slices_containing_variant_site(self) -> int:
+        return self.data.get("slices_containing_mutation", 0)
+
+    def variant_sites_denovo_ran_on(self) -> int:
+        return self.data.get("variant_sites_denovo_ran_on", 0)
+
+    def variant_sites_denovo_correctly_discovered(self) -> int:
+        return self.data.get("variant_sites_denovo_correctly_discovered", 0)
+
     def get_variant_calls(self) -> List[VariantCall]:
         try:
             variant_calls = [
@@ -65,6 +77,52 @@ class Result:
             variant_calls = []
 
         return variant_calls
+
+    def denovo_recall(self) -> float:
+        """% of simulated mutations where the mutant allele was included in the
+        candidates.
+        """
+        try:
+            return self.variant_sites_denovo_correctly_discovered() / self.num_snps
+        except ZeroDivisionError:
+            return 0.0
+
+    def denovo_precision(self) -> float:
+        """% of slices where we perform de novo, that include a simulated-mutation
+        within
+        """
+        try:
+            return (
+                self.variant_sites_denovo_correctly_discovered()
+                / self.total_denovo_slices()
+            )
+        except ZeroDivisionError:
+            return 0.0
+
+    def overall_recall(self) -> float:
+        """True variants called relative to all variants
+        Calculation: TP/TP+FN
+        """
+        true_positives = sum(variant.correct for variant in self.get_variant_calls())
+        false_negatives = self.num_snps - self.unique_snps_called()
+
+        try:
+            return true_positives / (true_positives + false_negatives)
+        except ZeroDivisionError:
+            return 0.0
+
+    def overall_precision(self) -> float:
+        """True variants called relative to total calls
+        Calculation: TP/TP+FP
+        """
+        are_calls_correct = [variant.correct for variant in self.get_variant_calls()]
+        true_positives = are_calls_correct.count(True)
+        false_positives = are_calls_correct.count(False)
+
+        try:
+            return true_positives / (true_positives + false_positives)
+        except ZeroDivisionError:
+            return 0.0
 
     @staticmethod
     def extract_parameters_from_path(path: Path) -> dict:
