@@ -99,19 +99,32 @@ class Result:
         except ZeroDivisionError:
             return 0.0
 
-    def overall_recall(self, conf_threshold=0) -> float:
-        """True variants called relative to all variants
-        Calculation: TP/TP+FN
-        """
-        true_positives = sum(
+    def overall_true_positives(self, conf_threshold=0):
+        return sum(
             variant.correct
             for variant in self.get_variant_calls()
             if variant.confidence >= conf_threshold
         )
-        false_negatives = self.num_snps - self.unique_snps_called()
+
+    def overall_false_negatives(self):
+        return self.num_snps - self.unique_snps_called()
+
+    def overall_false_positives(self, conf_threshold=0):
+        return sum(
+            not variant.correct
+            for variant in self.get_variant_calls()
+            if variant.confidence >= conf_threshold
+        )
+
+    def overall_recall(self, conf_threshold=0) -> float:
+        """True variants called relative to all variants
+        Calculation: TP/TP+FN
+        """
+        true_positives = self.overall_true_positives(conf_threshold)
+        false_negatives = self.overall_false_negatives()
 
         try:
-            return true_positives / (true_positives + false_negatives)
+            return true_positives / (false_negatives + self.overall_true_positives(0))
         except ZeroDivisionError:
             return 0.0
 
@@ -119,18 +132,32 @@ class Result:
         """True variants called relative to total calls
         Calculation: TP/TP+FP
         """
-        are_calls_correct = [
-            variant.correct
-            for variant in self.get_variant_calls()
-            if variant.confidence >= conf_threshold
-        ]
-        true_positives = are_calls_correct.count(True)
-        false_positives = are_calls_correct.count(False)
+        true_positives = self.overall_true_positives(conf_threshold)
+        false_positives = self.overall_false_positives(conf_threshold)
 
         try:
             return true_positives / (true_positives + false_positives)
         except ZeroDivisionError:
             return 0.0
+
+    def overall_accuracy(self, conf_threshold=0):
+        """Ratio of correct calls to total calls and variants
+        Calculation: TP+TN/TP+FP+TN+FN
+        Note: we are not using TN so cancels out of equation
+        """
+        true_positives = self.overall_true_positives(conf_threshold)
+
+        try:
+            return true_positives / (
+                self.overall_true_positives(0)
+                + self.overall_false_positives(0)
+                + self.overall_false_negatives()
+            )
+        except ZeroDivisionError:
+            return 0.0
+
+    def overall_error_rate(self, conf_threshold=0):
+        return 1 - self.overall_accuracy(conf_threshold)
 
     def as_dict(self, conf_threshold=0) -> dict:
         """Returns a dict representation.
