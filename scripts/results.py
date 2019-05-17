@@ -169,6 +169,8 @@ class Result:
             denovo_recall=self.denovo_recall(),
             overall_recall=self.overall_recall(conf_threshold),
             overall_precision=self.overall_precision(conf_threshold),
+            overall_accuracy=self.overall_accuracy(conf_threshold),
+            overall_error_rate=self.overall_error_rate(conf_threshold),
             denovo_kmer_size=self.denovo_kmer_size,
             num_snps=self.num_snps,
             coverage=self.coverage,
