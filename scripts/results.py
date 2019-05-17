@@ -174,6 +174,7 @@ class Result:
             coverage=self.coverage,
             max_nesting=self.max_nesting,
             read_quality=self.read_quality,
+            conf_threshold=conf_threshold,
         )
 
     @staticmethod
