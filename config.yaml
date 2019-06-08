@@ -1,5 +1,5 @@
-num_genes:             1
-num_reads_to_simulate: 5000
+num_genes:             50
+num_reads_to_simulate: 10000
 prg_nesting_lvls:
     - 1
     - 3

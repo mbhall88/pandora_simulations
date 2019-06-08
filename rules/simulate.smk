@@ -9,7 +9,7 @@ rule simulate_reads:
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 1000
     params:
-        profile = "ecoli_R9_1D",
+        profile = "/hps/nobackup/research/zi/mbhall/nanosim_training/ecoli/profile",
         perfect_reads = lambda wildcards: wildcards.read_quality == "perfect",
         num_reads = 500 * config["num_genes"],
         extra = "--circular --rnf --seed 88 --unalign-rate 0 ",
