@@ -50,7 +50,7 @@ rule index_initial_combined_prg:
         "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
     output:
         "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa.k15.w14.idx"
-    threads: 8
+    threads: 1
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 2000
     # singularity:
@@ -59,7 +59,7 @@ rule index_initial_combined_prg:
         "logs/{max_nesting_lvl}/index_initial_combined_prg.log"
     shell:
         """
-        pandora -t {threads} index --log_level debug {input} &> {log}
+        pandora index --log_level debug {input} &> {log}
         """
 
 
@@ -115,7 +115,7 @@ rule index_combined_prg_after_adding_denovo_paths:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa",
     output:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa.k15.w14.idx"
-    threads: 8
+    threads: 1
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 2000
     # singularity:
@@ -124,5 +124,5 @@ rule index_combined_prg_after_adding_denovo_paths:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/index_combined_prg_after_adding_denovo_paths.log"
     shell:
         """
-        pandora index -t {threads} --log_level debug {input} > {log} 2>&1
+        pandora index --log_level debug {input} > {log} 2>&1
         """
