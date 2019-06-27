@@ -1,8 +1,8 @@
 # Pandora Simulations
 
-## Setup initial gene alignment data
-
 ![rulegraph](rulegraph.png)
+
+## Setup initial gene alignment data
 
 The first thing that needs to be done before running the pipeline is to get and organise
 the gene alignment data. This is done with a provided script.  
