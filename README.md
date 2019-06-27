@@ -2,6 +2,8 @@
 
 ## Setup initial gene alignment data
 
+[!rulegrapg](rulegraph.png)
+
 The first thing that needs to be done before running the pipeline is to get and organise
 the gene alignment data. This is done with a provided script.  
 
