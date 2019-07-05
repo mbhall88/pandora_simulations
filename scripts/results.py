@@ -4,12 +4,13 @@ from typing import List
 
 
 class VariantCall:
-    def __init__(self, name, correct, mismatches):
+    def __init__(self, name, correct, mismatches, ref_id):
         self.name = name
         parts = name.split("_")
         self.confidence = float(parts[-1].replace("CONF", ""))
         self.entry = int(parts[-2].replace("entry", ""))
         self.pos = int(parts[-3].replace("pos", ""))
+        self.ref_pos = int(ref_id[1:-1])
         self.gene = name.split("_pos")[0]
         self.correct = bool(correct)
         self.mismatches = int(mismatches)
@@ -66,11 +67,12 @@ class Result:
     def get_variant_calls(self) -> List[VariantCall]:
         try:
             variant_calls = [
-                VariantCall(name, correct, mismatch)
-                for name, correct, mismatch in zip(
+                VariantCall(name, correct, mismatch, ref_id)
+                for name, correct, mismatch, ref_id in zip(
                     self.data["ids"],
                     self.data["snps_called_correctly"],
                     self.data["mismatches"],
+                    self.data["ref_ids"],
                 )
             ]
         except KeyError:
