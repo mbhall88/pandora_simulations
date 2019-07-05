@@ -125,7 +125,10 @@ class Result:
             else:
                 false_negatives += 1
 
-        assert true_positives + false_positives + false_negatives == self.num_snps
+        num_calls = true_positives + false_positives + false_negatives
+        assert (
+            num_calls == self.num_snps
+        ), f"Calculation of calls not matching up for {self}. Expectecting {self.num_snps}, but got {num_calls}"
         return true_positives, false_negatives, false_positives
 
     def overall_true_positives(self, conf_threshold=0):
