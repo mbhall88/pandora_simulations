@@ -247,7 +247,7 @@ def map_probes_to_panel(probes: str, reference_panel: Path, threads=1) -> dict:
     bwa.index(str(reference_panel))
     header, sam = bwa.align(probes)
 
-    results = {"snps_called_correctly": [], "mismatches": [], "ids": []}
+    results = {"snps_called_correctly": [], "mismatches": [], "ids": [], "ref_ids": []}
 
     valid_pandora_calls = 0
     sites_seen = set()
@@ -265,6 +265,7 @@ def map_probes_to_panel(probes: str, reference_panel: Path, threads=1) -> dict:
         results["snps_called_correctly"].append(is_snp_called_correctly(record))
         results["mismatches"].append(record.get_tag("NM"))
         results["ids"].append(record.query_name)
+        results["ref_ids"].append(record.reference_name)
 
     results["total_pandora_calls"] = len(sam)
     results["pandora_calls_crossing_ref_site"] = valid_pandora_calls
