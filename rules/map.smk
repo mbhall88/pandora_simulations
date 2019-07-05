@@ -8,7 +8,7 @@ rule map_with_discovery:
         directory("analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/denovo_paths"),
         consensus = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora.consensus.fq.gz",
         genotype_vcf = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.vcf",
-    threads: 1
+    threads: 8
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 8000
     params:
@@ -28,6 +28,7 @@ rule map_with_discovery:
             --read_file $read_file \
             --outdir $(pwd) \
             --output_kg \
+            -t {threads} \
             --output_covgs \
             --max_covg {wildcards.coverage} \
             --output_vcf \
@@ -35,6 +36,7 @@ rule map_with_discovery:
             --genome_size $genome_size \
             --discover \
             --denovo_kmer_size {wildcards.denovo_kmer_size} \
+            --max_num_kmers_to_average 100000\
             --log_level debug &> $log_file
         """
 
@@ -48,7 +50,7 @@ rule map_without_discovery:
     output:
         consensus = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/pandora.consensus.fq.gz",
         genotype_vcf = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/pandora_genotyped.vcf",
-    threads: 1
+    threads: 8
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 2000
     params:
@@ -63,8 +65,10 @@ rule map_without_discovery:
             --outdir {params.outdir} \
             --output_kg \
             --output_covgs \
+            -t {threads} \
             --max_covg {wildcards.coverage} \
             --output_vcf \
+            --max_num_kmers_to_average 100000 \
             --genotype \
             --genome_size $genome_size \
             --log_level debug &> {log}
