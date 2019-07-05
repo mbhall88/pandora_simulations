@@ -264,7 +264,7 @@ class TestResult:
             ids=["id1_pos1_entry0_CONF3", "id2_pos2_entry0_CONF3"],
             snps_called_correctly=[True, True],
             mismatches=[1, 2],
-            ref_ids=["A1T", "C2T"]
+            ref_ids=["A1T", "C2T"],
         )
         result.variant_calls = result._get_variant_calls()
 
@@ -280,7 +280,7 @@ class TestResult:
             ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
             snps_called_correctly=[True, False],
             mismatches=[1, 2],
-            ref_ids=["A1T", "T2G"]
+            ref_ids=["A1T", "T2G"],
         )
         result.variant_calls = result._get_variant_calls()
 
@@ -296,7 +296,7 @@ class TestResult:
             ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
             snps_called_correctly=[True, True],
             mismatches=[0, 2],
-            ref_ids=["A1T", "C5T"]
+            ref_ids=["A1T", "C5T"],
         )
         result.variant_calls = result._get_variant_calls()
 

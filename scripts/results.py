@@ -125,10 +125,6 @@ class Result:
             else:
                 false_negatives += 1
 
-        print(false_negatives)
-        print(false_positives)
-        print(true_positives)
-
         assert true_positives + false_positives + false_negatives == self.num_snps
         return true_positives, false_negatives, false_positives
 
