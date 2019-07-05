@@ -32,6 +32,7 @@ class Result:
         self.num_snps = num_snps
         self.max_nesting = max_nesting
         self.data = dict()
+        self.variant_calls = []
 
     def __eq__(self, other: "Result"):
         return all(
@@ -45,9 +46,13 @@ class Result:
             ]
         )
 
+    def __str__(self):
+        return f"Denovo kmer size:\t{self.denovo_kmer_size}\nCoverage:\t{self.coverage}\nRead quality:\t{self.read_quality}\nNumber of SNPs:\t{self.num_snps}\nMax nesting:\t{self.max_nesting}\n"
+
     def load_data_from_json(self, path: Path):
         with path.open() as json_file:
             self.data = json.load(json_file)
+        self.variant_calls = self._get_variant_calls()
 
     def unique_snps_called(self) -> int:
         return self.data.get("reference_sites_called", 0)
@@ -64,7 +69,7 @@ class Result:
     def variant_sites_denovo_correctly_discovered(self) -> int:
         return self.data.get("variant_sites_denovo_correctly_discovered", 0)
 
-    def get_variant_calls(self) -> List[VariantCall]:
+    def _get_variant_calls(self) -> List[VariantCall]:
         try:
             variant_calls = [
                 VariantCall(name, correct, mismatch, ref_id)
@@ -101,32 +106,50 @@ class Result:
         except ZeroDivisionError:
             return 0.0
 
-    def overall_true_positives(self, conf_threshold=0):
-        return sum(
-            variant.correct
-            for variant in self.get_variant_calls()
-            if variant.confidence >= conf_threshold
-        )
+    def _calculate_positives(self, conf_threshold=0):
+        position_calls = dict()
+        for call in self.variant_calls:
+            try:
+                position_calls[call.ref_pos - 1].append((call.correct, call.confidence))
+            except KeyError:
+                position_calls[call.ref_pos - 1] = [(call.correct, call.confidence)]
 
-    def overall_false_negatives(self):
-        return self.num_snps - self.unique_snps_called()
+        true_positives = 0
+        false_positives = 0
+        false_negatives = self.num_snps - self.unique_snps_called()
+        for pos, calls in position_calls.items():
+            if any(is_correct and conf >= conf_threshold for is_correct, conf in calls):
+                true_positives += 1
+            elif any(conf >= conf_threshold for _, conf in calls):
+                false_positives += 1
+            else:
+                false_negatives += 1
+
+        print(false_negatives)
+        print(false_positives)
+        print(true_positives)
+
+        assert true_positives + false_positives + false_negatives == self.num_snps
+        return true_positives, false_negatives, false_positives
+
+    def overall_true_positives(self, conf_threshold=0):
+        return self._calculate_positives(conf_threshold)[0]
+
+    def overall_false_negatives(self, conf_threshold=0):
+        return self._calculate_positives(conf_threshold)[1]
 
     def overall_false_positives(self, conf_threshold=0):
-        return sum(
-            not variant.correct
-            for variant in self.get_variant_calls()
-            if variant.confidence >= conf_threshold
-        )
+        return self._calculate_positives(conf_threshold)[-1]
 
     def overall_recall(self, conf_threshold=0) -> float:
         """True variants called relative to all variants
         Calculation: TP/TP+FN
         """
         true_positives = self.overall_true_positives(conf_threshold)
-        false_negatives = self.overall_false_negatives()
+        false_negatives = self.overall_false_negatives(conf_threshold)
 
         try:
-            return true_positives / (false_negatives + self.overall_true_positives(0))
+            return true_positives / (false_negatives + true_positives)
         except ZeroDivisionError:
             return 0.0
 
@@ -148,13 +171,11 @@ class Result:
         Note: we are not using TN so cancels out of equation
         """
         true_positives = self.overall_true_positives(conf_threshold)
+        false_positive = self.overall_false_positives(conf_threshold)
+        false_negatives = self.overall_false_negatives(conf_threshold)
 
         try:
-            return true_positives / (
-                self.overall_true_positives(0)
-                + self.overall_false_positives(0)
-                + self.overall_false_negatives()
-            )
+            return true_positives / (true_positives + false_negatives + false_positive)
         except ZeroDivisionError:
             return 0.0
 

@@ -9,26 +9,26 @@ TEST_JSON = TEST_CASES / "test.json"
 
 class TestVariantCall:
     def test_equality_twoEqualVariantCalls_returnTrue(self):
-        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0)
-        var2 = VariantCall("name_pos1_entry0_CONF8.8", True, 7)
+        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
+        var2 = VariantCall("name_pos1_entry0_CONF8.8", True, 7, "A44C")
 
         assert var1 == var2
 
     def test_equality_twoNonEqualVariantCalls_returnFalse(self):
-        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0)
-        var2 = VariantCall("name_pos1_entry0_CONF8.7", True, 0)
+        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
+        var2 = VariantCall("name_pos1_entry0_CONF8.7", True, 0, "A44C")
 
         assert not var1 == var2
 
     def test_nonEquality_twoEqualVariantCalls_returnFalse(self):
-        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0)
-        var2 = VariantCall("name_pos1_entry0_CONF8.8", True, 0)
+        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
+        var2 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
 
         assert not var1 != var2
 
     def test_nonEquality_twoNonEqualVariantCalls_returnTrue(self):
-        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0)
-        var2 = VariantCall("name_pos1_entry0_CONF8.7", True, 0)
+        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
+        var2 = VariantCall("name_pos1_entry0_CONF8.7", True, 0, "A44C")
 
         assert var1 != var2
 
@@ -84,6 +84,7 @@ class TestResult:
             "ids": ["id1_pos1_entry0_CONF3", "id2_pos2_entry1_CONF5.6"],
             "snps_called_correctly": [True, False],
             "mismatches": [0, 3],
+            "ref_ids": ["A44C", "A44C"],
         }
         actual = result.data
 
@@ -109,7 +110,7 @@ class TestResult:
     def test_getVariantCalls_noData_returnEmptyList(self):
         result = Result()
 
-        actual = result.get_variant_calls()
+        actual = result._get_variant_calls()
         expected = []
 
         assert actual == expected
@@ -118,10 +119,10 @@ class TestResult:
         result = Result()
         result.load_data_from_json(TEST_JSON)
 
-        actual = result.get_variant_calls()
+        actual = result.variant_calls
         expected = [
-            VariantCall("id1_pos1_entry0_CONF3", True, 0),
-            VariantCall("id2_pos2_entry1_CONF5.6", False, 3),
+            VariantCall("id1_pos1_entry0_CONF3", True, 0, "A44C"),
+            VariantCall("id2_pos2_entry1_CONF5.6", False, 3, "A44C"),
         ]
 
         assert actual == expected
@@ -214,11 +215,19 @@ class TestResult:
         assert actual == expected
 
     def test_overallRecall_noFalseNegatives_returnOne(self):
-        result = Result.from_dict(dict(num_snps=5))
-        result.data = dict(reference_sites_called=5,
-                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
-                           snps_called_correctly=[True, False],
-                           mismatches=[0, 2])
+        result = Result.from_dict(dict(num_snps=2))
+        result.data = dict(
+            reference_sites_called=2,
+            ids=[
+                "id1_pos1_entry0_CONF3",
+                "id2_pos1_entry0_CONF3",
+                "id3_pos5_entry0_CONF3",
+            ],
+            snps_called_correctly=[True, False, True],
+            mismatches=[0, 2, 0],
+            ref_ids=["A1C", "T1C", "T5G"],
+        )
+        result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_recall()
         expected = 1.0
@@ -227,10 +236,13 @@ class TestResult:
 
     def test_overallRecall_noTruePositives_returnZero(self):
         result = Result.from_dict(dict(num_snps=5))
-        result.data = dict(reference_sites_called=0,
-                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
-                           snps_called_correctly=[False, False],
-                           mismatches=[1, 2])
+        result.data = dict(
+            reference_sites_called=0,
+            ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+            snps_called_correctly=[False, False],
+            mismatches=[1, 2],
+        )
+        result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_recall()
         expected = 0.0
@@ -247,23 +259,30 @@ class TestResult:
 
     def test_overallRecall_halfTrueVariants_returnHalf(self):
         result = Result.from_dict(dict(num_snps=4))
-        result.data = dict(reference_sites_called=2,
-                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
-                           snps_called_correctly=[True, True],
-                           mismatches=[1, 2])
+        result.data = dict(
+            reference_sites_called=2,
+            ids=["id1_pos1_entry0_CONF3", "id2_pos2_entry0_CONF3"],
+            snps_called_correctly=[True, True],
+            mismatches=[1, 2],
+            ref_ids=["A1T", "C2T"]
+        )
+        result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_recall()
         expected = 0.5
 
         assert actual == expected
 
-
     def test_overallPrecision_halfTrueVariants_returnHalf(self):
         result = Result.from_dict(dict(num_snps=4))
-        result.data = dict(reference_sites_called=2,
-                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
-                           snps_called_correctly=[True, False],
-                           mismatches=[1, 2])
+        result.data = dict(
+            reference_sites_called=2,
+            ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+            snps_called_correctly=[True, False],
+            mismatches=[1, 2],
+            ref_ids=["A1T", "T2G"]
+        )
+        result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_precision()
         expected = 0.5
@@ -272,10 +291,14 @@ class TestResult:
 
     def test_overallPrecision_noFalsePositives_returnOne(self):
         result = Result.from_dict(dict(num_snps=5))
-        result.data = dict(reference_sites_called=5,
-                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
-                           snps_called_correctly=[True, True],
-                           mismatches=[0, 2])
+        result.data = dict(
+            reference_sites_called=2,
+            ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+            snps_called_correctly=[True, True],
+            mismatches=[0, 2],
+            ref_ids=["A1T", "C5T"]
+        )
+        result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_precision()
         expected = 1.0
@@ -284,10 +307,13 @@ class TestResult:
 
     def test_overallPrecision_noTruePositives_returnZero(self):
         result = Result.from_dict(dict(num_snps=5))
-        result.data = dict(reference_sites_called=0,
-                           ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
-                           snps_called_correctly=[False, False],
-                           mismatches=[1, 2])
+        result.data = dict(
+            reference_sites_called=0,
+            ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
+            snps_called_correctly=[False, False],
+            mismatches=[1, 2],
+        )
+        result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_precision()
         expected = 0.0
