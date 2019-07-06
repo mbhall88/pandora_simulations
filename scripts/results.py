@@ -106,7 +106,7 @@ class Result:
         except ZeroDivisionError:
             return 0.0
 
-    def _calculate_positives(self, conf_threshold=0):
+    def _calculate_metrics(self, conf_threshold=0):
         position_calls = dict()
         for call in self.variant_calls:
             try:
@@ -114,41 +114,37 @@ class Result:
             except KeyError:
                 position_calls[call.ref_pos - 1] = [(call.correct, call.confidence)]
 
+        positive_calls = 0
         true_positives = 0
-        false_positives = 0
-        false_negatives = self.num_snps - self.unique_snps_called()
-        for pos, calls in position_calls.items():
-            if any(is_correct and conf >= conf_threshold for is_correct, conf in calls):
-                true_positives += 1
-            elif any(conf >= conf_threshold for _, conf in calls):
-                false_positives += 1
-            else:
-                false_negatives += 1
 
-        num_calls = true_positives + false_positives + false_negatives
-        assert (
-            num_calls == self.num_snps
-        ), f"Calculation of calls not matching up for {self}. Expectecting {self.num_snps}, but got {num_calls}"
-        return true_positives, false_negatives, false_positives
+        for pos, calls in position_calls.items():
+            confident_calls = [i for i, (is_correct, conf) in enumerate(calls) if conf >= conf_threshold]
+            if confident_calls:
+                positive_calls += 1
+                if any(calls[i][0] for i in confident_calls):
+                    true_positives += 1
+
+        false_positives = positive_calls - true_positives
+
+        return true_positives, false_positives
 
     def overall_true_positives(self, conf_threshold=0):
-        return self._calculate_positives(conf_threshold)[0]
+        return self._calculate_metrics(conf_threshold)[0]
 
     def overall_false_negatives(self, conf_threshold=0):
-        return self._calculate_positives(conf_threshold)[1]
+        return self.num_snps - self.overall_true_positives(conf_threshold)
 
     def overall_false_positives(self, conf_threshold=0):
-        return self._calculate_positives(conf_threshold)[-1]
+        return self._calculate_metrics(conf_threshold)[-1]
 
     def overall_recall(self, conf_threshold=0) -> float:
         """True variants called relative to all variants
         Calculation: TP/TP+FN
         """
         true_positives = self.overall_true_positives(conf_threshold)
-        false_negatives = self.overall_false_negatives(conf_threshold)
 
         try:
-            return true_positives / (false_negatives + true_positives)
+            return true_positives / self.num_snps
         except ZeroDivisionError:
             return 0.0
 
