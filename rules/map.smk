@@ -10,7 +10,7 @@ rule map_with_discovery:
         genotype_vcf = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.vcf",
     threads: 8
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 8000
+        mem_mb = lambda wildcards, attempt: attempt * 4000
     params:
         outdir = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/",
     log:
@@ -36,7 +36,6 @@ rule map_with_discovery:
             --genome_size $genome_size \
             --discover \
             --denovo_kmer_size {wildcards.denovo_kmer_size} \
-            --max_num_kmers_to_average 100000\
             --log_level debug &> $log_file
         """
 
@@ -52,7 +51,7 @@ rule map_without_discovery:
         genotype_vcf = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/pandora_genotyped.vcf",
     threads: 8
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 2000
+        mem_mb = lambda wildcards, attempt: attempt * 4000
     params:
         outdir = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/",
     log:
@@ -68,7 +67,6 @@ rule map_without_discovery:
             -t {threads} \
             --max_covg {wildcards.coverage} \
             --output_vcf \
-            --max_num_kmers_to_average 100000 \
             --genotype \
             --genome_size $genome_size \
             --log_level debug &> {log}

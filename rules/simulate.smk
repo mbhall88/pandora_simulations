@@ -11,7 +11,7 @@ rule simulate_reads:
     params:
         profile = "/hps/nobackup/research/zi/mbhall/nanosim_training/ecoli/profile",
         perfect_reads = lambda wildcards: wildcards.read_quality == "perfect",
-        num_reads = 500 * config["num_genes"],
+        num_reads = config["num_reads_to_simulate"],
         extra = "--circular --rnf --seed 88 --unalign-rate 0 ",
     singularity: CONDA_IMG
     log:
