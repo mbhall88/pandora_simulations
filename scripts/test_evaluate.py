@@ -150,8 +150,6 @@ class TestReference:
         with pytest.raises(FileNotFoundError) as excinfo:
             ref.make_panel(panel)
 
-        assert "could not open variant file" in str(excinfo)
-
     def test_makePanel_invalidReferenceSequence_raisesFileNotFoundError(self):
         vcf = Path(TEST_MAKE_PROBE_VCF)
         sequence = Path("doesntexist.fa")
@@ -160,8 +158,6 @@ class TestReference:
 
         with pytest.raises(OSError) as excinfo:
             ref.make_panel(panel)
-
-        assert "file `doesntexist.fa` not found" in str(excinfo)
 
     def test_makePanel_oneVariantInMiddle_returnOneProbe(self):
         flank_width = 2
@@ -187,7 +183,7 @@ class TestQuery:
         query._min_probe_length = 10
         variant = retrieve_entry_from_test_query_vcf(1)
 
-        expected = ([16, 19], [22, 25])
+        expected = [16, 25]
         actual = query.calculate_probe_boundaries_for_entry(variant)
 
         assert actual == expected
@@ -199,7 +195,7 @@ class TestQuery:
         query._min_probe_length = 10
         variant = retrieve_entry_from_test_query_vcf(0)
 
-        expected = ([0, 0], [3, 6])
+        expected = [0, 6]
         actual = query.calculate_probe_boundaries_for_entry(variant)
 
         assert actual == expected
@@ -211,7 +207,7 @@ class TestQuery:
         query._min_probe_length = 2
         variant = retrieve_entry_from_test_query_vcf(1)
 
-        expected = ([19, 19], [22, 22])
+        expected = [19, 22]
         actual = query.calculate_probe_boundaries_for_entry(variant)
 
         assert actual == expected
@@ -223,7 +219,7 @@ class TestQuery:
         query._min_probe_length = 10
         variant = retrieve_entry_from_test_query_vcf(1)
 
-        expected = ([16, 19], [22, 25])
+        expected = [16, 25]
         actual = query.calculate_probe_boundaries_for_entry(variant)
 
         assert actual == expected
@@ -255,6 +251,7 @@ class TestQuery:
 
         assert actual.name == expected.name
 
+    @pytest.mark.xfail(reason="Changing implementation")
     def test_createProbesForGeneVariants_emptyVariants_returnEmptyProbes(self):
         query = Query(TEST_QUERY_VCF, TEST_QUERY_REF)
 
@@ -263,6 +260,7 @@ class TestQuery:
 
         assert actual == expected
 
+    @pytest.mark.xfail(reason="Changing implementation")
     def test_makeProbes_twoValidVariantsOneInvalid_returnTwoProbes(self):
         query = Query(TEST_QUERY_VCF, TEST_QUERY_REF)
         query._min_probe_length = 6
@@ -439,6 +437,7 @@ def test_mapProbesToPanel_oneRecordPerfectMapping():
         "snps_called_correctly": [True],
         "mismatches": [0],
         "ids": [name],
+        "ref_ids": ["C15154T"],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 1,
         "reference_sites_called": 1,
@@ -459,6 +458,7 @@ def test_mapProbesToPanel_oneRecordSnpCalledOneMismatch():
         "snps_called_correctly": [True],
         "mismatches": [1],
         "ids": [name],
+        "ref_ids": ["C15154T"],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 1,
         "reference_sites_called": 1,
@@ -479,6 +479,7 @@ def test_mapProbesToPanel_oneRecordSnpCalledTwoMismatches():
         "snps_called_correctly": [True],
         "mismatches": [2],
         "ids": [name],
+        "ref_ids": ["C15154T"],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 1,
         "reference_sites_called": 1,
@@ -499,6 +500,7 @@ def test_mapProbesToPanel_oneRecordSnpNotCalledNoOtherMismatches():
         "snps_called_correctly": [False],
         "mismatches": [1],
         "ids": [name],
+        "ref_ids": ["T16509G"],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 1,
         "reference_sites_called": 1,
@@ -519,6 +521,7 @@ def test_mapProbesToPanel_oneRecordDoesntMap():
         "snps_called_correctly": [],
         "mismatches": [],
         "ids": [],
+        "ref_ids": [],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 0,
         "reference_sites_called": 0,
@@ -541,6 +544,7 @@ def test_mapProbesToPanel_oneRecordMapsToPanelButToLeftOfVariant():
         "snps_called_correctly": [],
         "mismatches": [],
         "ids": [],
+        "ref_ids": [],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 0,
         "reference_sites_called": 0,
@@ -563,6 +567,7 @@ def test_mapProbesToPanel_oneRecordMapsToPanelButToRightOfVariant():
         "snps_called_correctly": [],
         "mismatches": [],
         "ids": [],
+        "ref_ids": [],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 0,
         "reference_sites_called": 0,
@@ -583,6 +588,7 @@ def test_mapProbesToPanel_oneRecordLastBaseIsVariantSite():
         "snps_called_correctly": [True],
         "mismatches": [0],
         "ids": [name],
+        "ref_ids": ["T16509G"],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 1,
         "reference_sites_called": 1,
@@ -603,6 +609,7 @@ def test_mapProbesToPanel_oneRecordFirstBaseIsVariantSite():
         "snps_called_correctly": [True],
         "mismatches": [0],
         "ids": [name],
+        "ref_ids": ["T16509G"],
         "total_pandora_calls": 1,
         "pandora_calls_crossing_ref_site": 1,
         "reference_sites_called": 1,
@@ -661,3 +668,143 @@ def test_candidateContainsExpectedSnp_variantPositionNotInAlignment_returnFalse(
     )
 
     assert not candidate_contains_expected_snp(record)
+
+
+def test_NoOverlappingIntervals_NoChange():
+    intervals = [[2, 4], [6, 9], [11, 12]]
+
+    result = merge_overlap_intervals(intervals)
+    expected = [[2, 4], [6, 9], [11, 12]]
+    assert result == expected
+
+
+def test_TwoIntervalsEqualEndStart_NoChange():
+    intervals = [[6, 9], [9, 12]]
+
+    result = merge_overlap_intervals(intervals)
+    expected = [[6, 9], [9, 12]]
+    assert result == expected
+
+
+def test_TwoIntervalsOverlap_Merge():
+    intervals = [[6, 9], [8, 12]]
+
+    result = merge_overlap_intervals(intervals)
+    expected = [[6, 12]]
+    assert result == expected
+
+
+def test_ThreeIntervalsOverlap_Merge():
+    intervals = [[6, 9], [8, 12], [11, 14]]
+
+    result = merge_overlap_intervals(intervals)
+    expected = [[6, 14]]
+    assert result == expected
+
+
+def test_ThreeIntervalsOverlapTwoEqualsEndStart_MergeOverlapDontMergeEquals():
+    intervals = [[6, 9], [8, 12], [11, 14], [14, 16]]
+
+    result = merge_overlap_intervals(intervals)
+    expected = [[6, 14], [14, 16]]
+
+    assert result == expected
+
+
+def test_FindIndexInIntervals_emptyIntervalsReturnsNegativeOne():
+    intervals = []
+    query = 2
+
+    actual = find_index_in_intervals(intervals, query)
+    expected = -1
+
+    assert actual == expected
+
+
+def test_FindIndexInIntervals_queryNotInIntervalsReturnsNegativeOne():
+    intervals = [[3, 7], [9, 20]]
+    query = 2
+
+    actual = find_index_in_intervals(intervals, query)
+    expected = -1
+
+    assert actual == expected
+
+
+def test_FindIndexInIntervals_queryInFirstIntervalsReturnsZero():
+    intervals = [[3, 7], [9, 20]]
+    query = 5
+
+    actual = find_index_in_intervals(intervals, query)
+    expected = 0
+
+    assert actual == expected
+
+
+def test_FindIndexInIntervals_queryInSecondIntervalsReturnsOne():
+    intervals = [[3, 7], [9, 20]]
+    query = 14
+
+    actual = find_index_in_intervals(intervals, query)
+    expected = 1
+
+    assert actual == expected
+
+
+def test_FindIndexInIntervals_queryEqualsStartOfFirstIntervalReturnsZero():
+    intervals = [[3, 7], [9, 20]]
+    query = 3
+
+    actual = find_index_in_intervals(intervals, query)
+    expected = 0
+
+    assert actual == expected
+
+
+def test_FindIndexInIntervals_queryEqualsEndOfFirstIntervalReturnsZero():
+    intervals = [[3, 7], [9, 20]]
+    query = 7
+
+    actual = find_index_in_intervals(intervals, query)
+    expected = 0
+
+    assert actual == expected
+
+
+def test_FindIndexInIntervals_queryGreaterthanLastIntervalReturnsNegativeOne():
+    intervals = [[3, 7], [9, 20]]
+    query = 70
+
+    actual = find_index_in_intervals(intervals, query)
+    expected = -1
+
+    assert actual == expected
+
+
+def test_AnyEntriesOverlap_emptyEntriesReturnsFalse():
+    entries = []
+
+    assert not any_entries_overlap(entries)
+
+
+def test_AnyEntriesOverlap_oneEntryReturnsFalse():
+    entries = [retrieve_entry_from_test_query_vcf(1)]
+
+    assert not any_entries_overlap(entries)
+
+
+def test_AnyEntriesOverlap_twoNonOverlappingEntriesReturnsFalse():
+    entries = [
+        retrieve_entry_from_test_query_vcf(1),
+        retrieve_entry_from_test_query_vcf(2),
+    ]
+
+    assert not any_entries_overlap(entries)
+
+def test_AnyEntriesOverlap_twoOverlappingEntriesReturnsTrue():
+    entries = [
+        retrieve_entry_from_test_vcf(1),
+        retrieve_entry_from_test_query_vcf(1),
+    ]
+
+    assert any_entries_overlap(entries)

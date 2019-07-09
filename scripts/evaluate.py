@@ -3,10 +3,10 @@ from contextlib import ExitStack
 import subprocess
 import pysam
 import json
-from typing import List
+from typing import List, Tuple
 
 REF_PANEL_FLANK_WIDTH = 100
-MIN_QUERY_PROBE_LEN = 70
+QUERY_PROBE_FLANK_WIDTH = 75
 
 
 class Sequence(str):
@@ -125,7 +125,7 @@ class Query:
         )
         self.genes = genes
         self._probe_names = set()
-        self._min_probe_length = MIN_QUERY_PROBE_LEN
+        self._min_probe_length = QUERY_PROBE_FLANK_WIDTH
         self._entry_number = 0
 
     def make_probes(self) -> str:
@@ -153,11 +153,38 @@ class Query:
         self, gene: pysam.FastxRecord, variants: pysam.tabix_iterator
     ) -> str:
         probes = ""
+        variants = [entry for entry in variants if not is_invalid_vcf_entry(entry)]
+
+        if any_entries_overlap(variants):
+            raise Exception(f"Found overlapping variant records in {str(self.vcf)}")
+
+        intervals = merge_overlap_intervals(
+            [
+                self.calculate_probe_boundaries_for_entry(variant)
+                for variant in variants
+            ]
+        )
+        # todo: put the below block in a function and test
+        M = dict()
+        for v in variants:
+            i = find_index_in_intervals(intervals, v.start)
+            M[intervals[i]].append(v) # todo: catch when key not exists yet
+
+        for i, E in M.items():
+            S = ""
+            consensus = "" # todo: get sequence from consensus for i
+            last_idx = 0
+
+            for e in E:
+                j = e.start - i[0]
+                S += consensus[last_idx: j]
+                S += get_variant_sequence(e)
+                last_idx = j + e.rlen
+            S += consensus[last_idx:]
+
 
         for variant in variants:
-            if is_invalid_vcf_entry(variant):
-                continue
-
+            idx = find_index_in_intervals(intervals, variant.pos)
             left_idxs, right_idxs = self.calculate_probe_boundaries_for_entry(variant)
             left_flank = gene.sequence[slice(*left_idxs)]
             right_flank = gene.sequence[slice(*right_idxs)]
@@ -187,7 +214,9 @@ class Query:
 
         return probe
 
-    def calculate_probe_boundaries_for_entry(self, entry: pysam.VariantRecord) -> tuple:
+    def calculate_probe_boundaries_for_entry(
+        self, entry: pysam.VariantRecord
+    ) -> List[int]:
         variant_len = get_variant_length(entry)
         delta_len = self._min_probe_length - variant_len
         left = [entry.start, entry.start]
@@ -199,7 +228,84 @@ class Query:
             left[0] = max(0, entry.start - flank_width)
             right[1] = entry.stop + flank_width
 
-        return left, right
+        return [left[0], right[-1]]
+
+
+def merge_overlap_intervals(intervals: List[List[int]]) -> List[List[int]]:
+    """Checks consecutive intervals and if they overlap it merges them into a
+    single interval.
+    Args:
+        intervals: A list of intervals where each interval is a List with two
+        elements corresponding to the start and end of the interval
+        respectively.
+    Returns:
+        A new intervals list where any intervals that overlapped have been
+        merged into a single interval.
+    Example:
+        >>> intervals = [[1, 4], [3, 7], [10, 14]]
+        >>> merge_overlap_intervals(intervals)
+        [[1, 7], [10, 14]]
+    """
+    merged_intervals = []
+    cached_interval = None
+
+    for interval in intervals:
+        if cached_interval is None:
+            cached_interval = interval
+            continue
+
+        if outside_interval(cached_interval, interval):
+            merged_intervals.append(cached_interval)
+            cached_interval = interval
+        else:
+            cached_interval = extend_interval(cached_interval, interval)
+
+    if cached_interval is not None:
+        merged_intervals.append(cached_interval)
+
+    return merged_intervals
+
+
+def outside_interval(first_interval: List[int], second_interval: List[int]) -> bool:
+    """Determines whether two intervals overlap.
+    Args:
+        first_interval: The interval with the lower start index.
+        second_interval: The interval with the higher start index.
+    Returns:
+        Whether the start of the second interval is less than the end of the
+        first interval. i.e do they overlap?
+    Notes:
+        If the end index of the first interval is equal to the start of the
+        second interval than they are deemed to NOT be overlapping.
+    Example:
+        >>> first_interval = [0, 4]
+        >>> second_interval = [3, 7]
+        >>> outside_interval(first_interval, second_interval)
+        False
+    """
+    return second_interval[0] >= first_interval[1]
+
+
+def extend_interval(interval_to_extend: List[int], interval: List[int]) -> List[int]:
+    """Extends an interval to encompass another.
+    Args:
+        interval_to_extend: The interval to extend.
+        interval: The interval to extend by.
+    Returns:
+        A new interval with the same start as interval_to_extend and the same
+        end as interval.
+    """
+    interval_to_extend[1] = interval[1]
+
+    return interval_to_extend
+
+
+def find_index_in_intervals(intervals: List[List[int]], query: int) -> int:
+    """Return the index of the interval that the query lies within"""
+    for i, (start, end) in enumerate(intervals):
+        if start <= query <= end:
+            return i
+    return -1
 
 
 def is_invalid_vcf_entry(entry: pysam.VariantRecord) -> bool:
@@ -213,7 +319,9 @@ def get_genotype_confidence(variant: pysam.VariantRecord) -> float:
 
 
 def get_genotype(variant: pysam.VariantRecord) -> int:
-    return variant.samples["sample"]["GT"][0]
+    samples = list(variant.samples.keys())
+    assert len(samples) == 1
+    return variant.samples[samples[0]]["GT"][0]
 
 
 def get_variant_sequence(variant: pysam.VariantRecord) -> str:
@@ -323,30 +431,56 @@ def evaluate_candidates(candidate_files: List[Path], panel: str, threads: int) -
     return results
 
 
+def any_entries_overlap(entries: List[pysam.VariantRecord]) -> bool:
+    """Checks whether any VCF entry's alleles overlap"""
+    if len(entries) > 1:
+        for i in range(len(entries) - 1):
+            this_entry = entries[i]
+            next_entry = entries[i + 1]
+            if (this_entry.start + get_variant_length(this_entry)) > next_entry.start:
+                return True
+
+    return False
+
+
 def main():
-    reference_panel = Path(snakemake.output.reference_panel)
+    # reference_panel = Path(snakemake.output.reference_panel)
+    reference_panel = Path("test_cases/ref_panel.fa")
+    # reference = Reference(
+    #     Path(snakemake.input.reference_vcf), Path(snakemake.input.reference_seq)
+    # )
     reference = Reference(
-        Path(snakemake.input.reference_vcf), Path(snakemake.input.reference_seq)
+        Path("test_cases/combined_random_paths_mutated.vcf"),
+        Path("test_cases/combined_random_paths_mutated_1.fasta"),
     )
     reference.make_panel(reference_panel)
 
+    # query = Query(
+    #     Path(snakemake.input.query_vcf), Path(snakemake.input.pandora_consensus)
+    # )
     query = Query(
-        Path(snakemake.input.query_vcf), Path(snakemake.input.pandora_consensus)
+        Path("test_cases/pandora_genotyped.vcf"),
+        Path("test_cases/pandora.consensus.fq.gz"),
     )
     query_probes = query.make_probes()
 
-    probe_results = map_probes_to_panel(
-        query_probes, reference_panel, snakemake.threads
-    )
-    probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
+    # probe_results = map_probes_to_panel(
+    #     query_probes, reference_panel, snakemake.threads
+    # )
+    probe_results = map_probes_to_panel(query_probes, reference_panel, 2)
+    # probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
+    probe_results["total_reference_sites"] = 400
 
     panel = reference_panel.read_text()
-    candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
-    candidate_results = evaluate_candidates(candidate_files, panel, snakemake.threads)
+    # candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
+    # candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
+    # candidate_results = evaluate_candidates(candidate_files, panel, snakemake.threads)
 
-    results = {**probe_results, **candidate_results}
+    # results = {**probe_results, **candidate_results}
+    results = {**probe_results}
 
-    write_results(results, Path(snakemake.output.results))
+    # write_results(results, Path(snakemake.output.results))
+    write_results(results, Path("test_cases/results.json"))
 
 
 if __name__ == "__main__":
