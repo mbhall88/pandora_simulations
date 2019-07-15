@@ -27,7 +27,7 @@ rule add_denovo_paths_to_msa:
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/add_denovo_to_msa.log"
     run:
-        gene_paths = list(Path(input.denovo_dir).glob(f"{wildcards.gene}*.fa"))
+        gene_paths = list(Path(input.denovo_dir).glob(f"{wildcards.gene}\.*.fa"))
         new_msa_path = Path(output[0])
 
         if not new_msa_path.parent.is_dir():
