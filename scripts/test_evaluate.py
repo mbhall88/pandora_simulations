@@ -224,52 +224,107 @@ class TestQuery:
 
         assert actual == expected
 
-    def test_createProbeForVariant_nameNotInSeen_returnEntry0(self):
-        query = Query(TEST_QUERY_VCF, TEST_PANEL)
-        query._min_probe_length = 2
-        variant = retrieve_entry_from_test_query_vcf(0)
-
-        expected = pysam.FastxRecord()
-        expected.set_name(
-            f"GC00000001_155_pos1_entry0_CONF{get_genotype_confidence(variant)}"
-        )
-        actual = query.create_probe_for_variant(variant)
-
-        assert actual.name == expected.name
-
-    def test_createProbeForVariant_nameInSeen_returnEntry1(self):
-        query = Query(TEST_QUERY_VCF, TEST_PANEL)
-        query._min_probe_length = 2
-        query._probe_names.add("GC00000001_155_pos1")
-        variant = retrieve_entry_from_test_query_vcf(0)
-
-        expected = pysam.FastxRecord()
-        expected.set_name(
-            f"GC00000001_155_pos1_entry1_CONF{get_genotype_confidence(variant)}"
-        )
-        actual = query.create_probe_for_variant(variant)
-
-        assert actual.name == expected.name
-
-    @pytest.mark.xfail(reason="Changing implementation")
     def test_createProbesForGeneVariants_emptyVariants_returnEmptyProbes(self):
         query = Query(TEST_QUERY_VCF, TEST_QUERY_REF)
 
         expected = ""
-        actual = query.create_probes_for_gene_variants(pysam.FastxRecord(), [])
+        actual = query._create_probes_for_gene_variants(pysam.FastxRecord(), [])
 
         assert actual == expected
 
-    @pytest.mark.xfail(reason="Changing implementation")
-    def test_makeProbes_twoValidVariantsOneInvalid_returnTwoProbes(self):
-        query = Query(TEST_QUERY_VCF, TEST_QUERY_REF)
-        query._min_probe_length = 6
+    def test_makeProbes_emptyVariantsReturnsEmptyProbes(self):
+        vcf = TEST_CASES / "empty.vcf"
+        genes = TEST_QUERY_REF
+        query = Query(vcf, genes)
 
-        expected = ">GC00000001_155_pos1_entry0_CONF262.757\nCTGG\n>GC00000001_155_pos20_entry0_CONF262.757\nCTTGGC\n"
         actual = query.make_probes()
+        expected = ""
 
         assert actual == expected
 
+    def test_makeProbes_emptyGenesReturnsEmptyProbes(self):
+        vcf = TEST_CASES / "empty.vcf"
+        genes = TEST_CASES / "empty.fa"
+        query = Query(vcf, genes)
+
+        actual = query.make_probes()
+        expected = ""
+
+        assert actual == expected
+
+    def test_makeProbes_oneGeneOneVcfRecordNotInGeneReturnsEmptyProbes(self):
+        vcf = TEST_CASES / "empty.vcf"
+        genes = TEST_QUERY_REF
+        query = Query(vcf, genes)
+
+        actual = query.make_probes()
+        expected = ""
+
+        assert actual == expected
+
+    def test_makeProbes_oneGeneOneVcfRecordInGeneReturnsOneProbe(self):
+        vcf = TEST_CASES / "make_probes_1.vcf"
+        genes = TEST_CASES / "make_probes_1.fa"
+        min_probe_length = 3
+        query = Query(vcf, genes, min_probe_length)
+
+        actual = query.make_probes()
+        expected = ">gene1_interval=(2, 5)\nxFx\n"
+
+        assert actual == expected
+
+    def test_makeProbes_oneGeneTwoOverlappingVcfRecordsInGeneRaisesException(self):
+        vcf = TEST_CASES / "make_probes_2.vcf"
+        genes = TEST_CASES / "make_probes_1.fa"
+        min_probe_length = 3
+        query = Query(vcf, genes, min_probe_length)
+
+        with pytest.raises(OverlappingRecordsError):
+            query.make_probes()
+
+    def test_makeProbes_oneGeneTwoCloseVcfRecordsInGeneReturnsOneProbe(self):
+        vcf = TEST_CASES / "make_probes_3.vcf"
+        genes = TEST_CASES / "make_probes_2.fa"
+        min_probe_length = 7
+        query = Query(vcf, genes, min_probe_length)
+
+        actual = query.make_probes()
+        expected = ">gene1_interval=(1, 11)\nxxFOOxxFOOxx\n"
+
+        assert actual == expected
+
+    def test_makeProbes_oneGeneTwoNonCloseVcfRecordsInGeneReturnsTwoProbes(self):
+        vcf = TEST_CASES / "make_probes_3.vcf"
+        genes = TEST_CASES / "make_probes_2.fa"
+        min_probe_length = 5
+        query = Query(vcf, genes, min_probe_length)
+
+        actual = query.make_probes()
+        expected = ">gene1_interval=(2, 6)\nxFOOx\n>gene1_interval=(6, 10)\nxFOOx\n"
+
+        assert actual == expected
+
+    def test_makeProbes_twoGenesTwoNonCloseVcfRecordsInOneGeneReturnsTwoProbes(self):
+        vcf = TEST_CASES / "make_probes_3.vcf"
+        genes = TEST_CASES / "make_probes_3.fa"
+        min_probe_length = 5
+        query = Query(vcf, genes, min_probe_length)
+
+        actual = query.make_probes()
+        expected = ">gene1_interval=(2, 6)\nxFOOx\n>gene1_interval=(6, 10)\nxFOOx\n"
+
+        assert actual == expected
+
+    def test_makeProbes_twoGenesTwoVcfRecordsOneInEachGeneReturnsTwoProbes(self):
+        vcf = TEST_CASES / "make_probes_4.vcf"
+        genes = TEST_CASES / "make_probes_3.fa"
+        min_probe_length = 5
+        query = Query(vcf, genes, min_probe_length)
+
+        actual = query.make_probes()
+        expected = ">gene1_interval=(2, 6)\nxFOOx\n>gene2_interval=(0, 4)\nxFOOx\n"
+
+        assert actual == expected
 
 def test_isInvalidVcfEntry_withNoneGenotype_returnTrue():
     entry = retrieve_entry_from_test_vcf(0)
@@ -674,7 +729,7 @@ def test_NoOverlappingIntervals_NoChange():
     intervals = [[2, 4], [6, 9], [11, 12]]
 
     result = merge_overlap_intervals(intervals)
-    expected = [[2, 4], [6, 9], [11, 12]]
+    expected = [(2, 4), (6, 9), (11, 12)]
     assert result == expected
 
 
@@ -682,7 +737,7 @@ def test_TwoIntervalsEqualEndStart_NoChange():
     intervals = [[6, 9], [9, 12]]
 
     result = merge_overlap_intervals(intervals)
-    expected = [[6, 9], [9, 12]]
+    expected = [(6, 9), (9, 12)]
     assert result == expected
 
 
@@ -690,7 +745,7 @@ def test_TwoIntervalsOverlap_Merge():
     intervals = [[6, 9], [8, 12]]
 
     result = merge_overlap_intervals(intervals)
-    expected = [[6, 12]]
+    expected = [(6, 12)]
     assert result == expected
 
 
@@ -698,7 +753,7 @@ def test_ThreeIntervalsOverlap_Merge():
     intervals = [[6, 9], [8, 12], [11, 14]]
 
     result = merge_overlap_intervals(intervals)
-    expected = [[6, 14]]
+    expected = [(6, 14)]
     assert result == expected
 
 
@@ -706,7 +761,7 @@ def test_ThreeIntervalsOverlapTwoEqualsEndStart_MergeOverlapDontMergeEquals():
     intervals = [[6, 9], [8, 12], [11, 14], [14, 16]]
 
     result = merge_overlap_intervals(intervals)
-    expected = [[6, 14], [14, 16]]
+    expected = [(6, 14), (14, 16)]
 
     assert result == expected
 
@@ -801,10 +856,43 @@ def test_AnyEntriesOverlap_twoNonOverlappingEntriesReturnsFalse():
 
     assert not any_entries_overlap(entries)
 
+
 def test_AnyEntriesOverlap_twoOverlappingEntriesReturnsTrue():
-    entries = [
-        retrieve_entry_from_test_vcf(1),
-        retrieve_entry_from_test_query_vcf(1),
-    ]
+    entries = [retrieve_entry_from_test_vcf(1), retrieve_entry_from_test_query_vcf(1)]
 
     assert any_entries_overlap(entries)
+
+
+def test_AssignVariantsToIntervals_noIntervalsReturnsEmpty():
+    intervals = []
+    variants = [retrieve_entry_from_test_vcf(i) for i in range(3)]
+
+    actual = assign_variants_to_intervals(variants, intervals)
+    expected = dict()
+
+    assert actual == expected
+
+
+def test_AssignVariantsToIntervals_oneVariantInIntervalReturnsOneMapping():
+    intervals = [(19, 22), (400, 444)]
+    variants = [retrieve_entry_from_test_query_vcf(i) for i in range(3)]
+
+    actual = assign_variants_to_intervals(variants, intervals)
+    expected = {(19, 22): [retrieve_entry_from_test_query_vcf(1)]}
+
+    assert actual == expected
+
+
+def test_AssignVariantsToIntervals_twoVariantInIntervalReturnsOneMapping():
+    intervals = [(0, 22)]
+    variants = [retrieve_entry_from_test_query_vcf(i) for i in range(3)]
+
+    actual = assign_variants_to_intervals(variants, intervals)
+    expected = {
+        (0, 22): [
+            retrieve_entry_from_test_query_vcf(0),
+            retrieve_entry_from_test_query_vcf(1),
+        ]
+    }
+
+    assert actual == expected

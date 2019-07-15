@@ -2,11 +2,16 @@ from pathlib import Path
 from contextlib import ExitStack
 import subprocess
 import pysam
+import sys
 import json
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 REF_PANEL_FLANK_WIDTH = 100
 QUERY_PROBE_FLANK_WIDTH = 75
+
+
+class OverlappingRecordsError(Exception):
+    pass
 
 
 class Sequence(str):
@@ -119,18 +124,19 @@ class Reference:
 
 
 class Query:
-    def __init__(self, vcf: Path, genes: Path):
+    def __init__(
+        self, vcf: Path, genes: Path, min_probe_length: int = QUERY_PROBE_FLANK_WIDTH
+    ):
         self.vcf = Path(
             pysam.tabix_index(str(vcf), preset="vcf", keep_original=True, force=True)
         )
         self.genes = genes
         self._probe_names = set()
-        self._min_probe_length = QUERY_PROBE_FLANK_WIDTH
+        self._min_probe_length = min_probe_length
         self._entry_number = 0
 
     def make_probes(self) -> str:
         query_probes = ""
-
         with ExitStack() as stack:
             vcf = stack.enter_context(pysam.VariantFile(self.vcf))
             genes_fasta = stack.enter_context(pysam.FastxFile(str(self.genes)))
@@ -144,75 +150,46 @@ class Query:
                     else:
                         raise
 
-                probes_for_gene = self.create_probes_for_gene_variants(gene, entries)
+                probes_for_gene = self._create_probes_for_gene_variants(gene, entries)
                 query_probes += probes_for_gene
 
         return query_probes
 
-    def create_probes_for_gene_variants(
+    def _create_probes_for_gene_variants(
         self, gene: pysam.FastxRecord, variants: pysam.tabix_iterator
     ) -> str:
+        """Note: An assumption is made with this function that the variants you pass in
+        are from the gene passed with them."""
         probes = ""
         variants = [entry for entry in variants if not is_invalid_vcf_entry(entry)]
 
         if any_entries_overlap(variants):
-            raise Exception(f"Found overlapping variant records in {str(self.vcf)}")
+            raise OverlappingRecordsError(f"Found overlapping variant records in {str(self.vcf)}")
 
         intervals = merge_overlap_intervals(
-            [
-                self.calculate_probe_boundaries_for_entry(variant)
-                for variant in variants
-            ]
+            [self.calculate_probe_boundaries_for_entry(variant) for variant in variants]
         )
-        # todo: put the below block in a function and test
-        M = dict()
-        for v in variants:
-            i = find_index_in_intervals(intervals, v.start)
-            M[intervals[i]].append(v) # todo: catch when key not exists yet
+        intervals_to_variants = assign_variants_to_intervals(variants, intervals)
 
-        for i, E in M.items():
-            S = ""
-            consensus = "" # todo: get sequence from consensus for i
+        for interval, this_intervals_variants in intervals_to_variants.items():
+            mutated_consensus = ""
+            consensus = gene.sequence[slice(*interval)]
             last_idx = 0
 
-            for e in E:
-                j = e.start - i[0]
-                S += consensus[last_idx: j]
-                S += get_variant_sequence(e)
-                last_idx = j + e.rlen
-            S += consensus[last_idx:]
-
-
-        for variant in variants:
-            idx = find_index_in_intervals(intervals, variant.pos)
-            left_idxs, right_idxs = self.calculate_probe_boundaries_for_entry(variant)
-            left_flank = gene.sequence[slice(*left_idxs)]
-            right_flank = gene.sequence[slice(*right_idxs)]
-
-            probe = self.create_probe_for_variant(variant)
-            probe.set_sequence(left_flank + get_variant_sequence(variant) + right_flank)
+            for variant in this_intervals_variants:
+                start_idx_of_variant_on_consensus = variant.start - interval[0]
+                mutated_consensus += consensus[
+                    last_idx:start_idx_of_variant_on_consensus
+                ]
+                mutated_consensus += get_variant_sequence(variant)
+                last_idx = start_idx_of_variant_on_consensus + variant.rlen
+            mutated_consensus += consensus[last_idx:]
+            probe = pysam.FastxRecord()
+            probe.set_name(f"{this_intervals_variants[0].chrom}_interval={interval}")
+            probe.set_sequence(mutated_consensus)
             probes += str(probe) + "\n"
 
         return probes
-
-    def create_probe_for_variant(
-        self, variant: pysam.VariantRecord
-    ) -> pysam.FastxRecord:
-        probe = pysam.FastxRecord()
-        probe.set_name(f"{variant.chrom}_pos{variant.pos}")
-
-        if probe.name in self._probe_names:
-            self._entry_number += 1
-        else:
-            self._probe_names.add(probe.name)
-            self._entry_number = 0
-
-        probe.set_name(
-            probe.name
-            + f"_entry{self._entry_number}_CONF{get_genotype_confidence(variant)}"
-        )
-
-        return probe
 
     def calculate_probe_boundaries_for_entry(
         self, entry: pysam.VariantRecord
@@ -231,7 +208,7 @@ class Query:
         return [left[0], right[-1]]
 
 
-def merge_overlap_intervals(intervals: List[List[int]]) -> List[List[int]]:
+def merge_overlap_intervals(intervals: List[List[int]]) -> List[Tuple[int, int]]:
     """Checks consecutive intervals and if they overlap it merges them into a
     single interval.
     Args:
@@ -244,7 +221,7 @@ def merge_overlap_intervals(intervals: List[List[int]]) -> List[List[int]]:
     Example:
         >>> intervals = [[1, 4], [3, 7], [10, 14]]
         >>> merge_overlap_intervals(intervals)
-        [[1, 7], [10, 14]]
+        [(1, 7), (10, 14)]
     """
     merged_intervals = []
     cached_interval = None
@@ -255,13 +232,13 @@ def merge_overlap_intervals(intervals: List[List[int]]) -> List[List[int]]:
             continue
 
         if outside_interval(cached_interval, interval):
-            merged_intervals.append(cached_interval)
+            merged_intervals.append(tuple(cached_interval))
             cached_interval = interval
         else:
             cached_interval = extend_interval(cached_interval, interval)
 
     if cached_interval is not None:
-        merged_intervals.append(cached_interval)
+        merged_intervals.append(tuple(cached_interval))
 
     return merged_intervals
 
@@ -300,7 +277,7 @@ def extend_interval(interval_to_extend: List[int], interval: List[int]) -> List[
     return interval_to_extend
 
 
-def find_index_in_intervals(intervals: List[List[int]], query: int) -> int:
+def find_index_in_intervals(intervals: List[Tuple[int, int]], query: int) -> int:
     """Return the index of the interval that the query lies within"""
     for i, (start, end) in enumerate(intervals):
         if start <= query <= end:
@@ -441,6 +418,29 @@ def any_entries_overlap(entries: List[pysam.VariantRecord]) -> bool:
                 return True
 
     return False
+
+
+def assign_variants_to_intervals(
+    variants: List[pysam.VariantRecord], intervals: List[Tuple[int, int]]
+) -> Dict[Tuple[int, int], List[pysam.VariantRecord]]:
+    """Assigns each variant to an interval based on the variant's position.
+    If a variant doesn't fall within an interval it is not added."""
+    interval_to_variants = dict()
+    for variant in variants:
+        i = find_index_in_intervals(intervals, variant.start)
+
+        if i == -1:
+            print(
+                "WARNING: variant does not fall within any intervals.", file=sys.stderr
+            )
+            continue
+
+        if intervals[i] not in interval_to_variants:
+            interval_to_variants[intervals[i]] = [variant]
+        else:
+            interval_to_variants[intervals[i]].append(variant)
+
+    return interval_to_variants
 
 
 def main():
