@@ -118,7 +118,11 @@ class Result:
         true_positives = 0
 
         for pos, calls in position_calls.items():
-            confident_calls = [i for i, (is_correct, conf) in enumerate(calls) if conf >= conf_threshold]
+            confident_calls = [
+                i
+                for i, (is_correct, conf) in enumerate(calls)
+                if conf >= conf_threshold
+            ]
             if confident_calls:
                 positive_calls += 1
                 if any(calls[i][0] for i in confident_calls):
