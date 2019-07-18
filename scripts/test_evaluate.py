@@ -293,6 +293,30 @@ class TestQuery:
 
         assert actual == expected
 
+    def test_makeProbes_oneGeneThreeCloseVcfRecordsInGeneMiddleOneHighConfReturnsOneProbe(self):
+        gt_conf_threshold = 0
+        vcf = TEST_CASES / "make_probes_5.vcf"
+        genes = TEST_CASES / "make_probes_2.fa"
+        min_probe_length = 7
+        query = Query(vcf, genes, min_probe_length)
+
+        actual = query.make_probes(gt_conf_threshold)
+        expected = ">gene1_interval=(1, 15)\nxxFOOxxFOOxxFOOxx\n"
+
+        assert actual == expected
+
+    def test_makeProbes_oneGeneThreeCloseVcfRecordsInGeneMiddleOneLowConfReturnsTwoProbes(self):
+        gt_conf_threshold = 50.0
+        vcf = TEST_CASES / "make_probes_5.vcf"
+        genes = TEST_CASES / "make_probes_2.fa"
+        min_probe_length = 7
+        query = Query(vcf, genes, min_probe_length)
+
+        actual = query.make_probes(gt_conf_threshold)
+        expected = ">gene1_interval=(1, 7)\nxxFOOxx\n>gene1_interval=(9, 15)\nxxFOOxx\n"
+
+        assert actual == expected
+
     def test_makeProbes_oneGeneTwoNonCloseVcfRecordsInGeneReturnsTwoProbes(self):
         vcf = TEST_CASES / "make_probes_3.vcf"
         genes = TEST_CASES / "make_probes_2.fa"

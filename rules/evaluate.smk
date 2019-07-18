@@ -8,7 +8,7 @@ rule evaluate:
     output:
         reference_panel = Path("analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/reference_panel.fa"),
         results = "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/results.json"
-    threads: 1
+    threads: 4
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 2000
     singularity: CONDA_IMG

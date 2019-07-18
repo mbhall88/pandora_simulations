@@ -135,7 +135,7 @@ class Query:
         self._min_probe_length = min_probe_length
         self._entry_number = 0
 
-    def make_probes(self) -> str:
+    def make_probes(self, gt_conf_threshold: float = 0) -> str:
         query_probes = ""
         with ExitStack() as stack:
             vcf = stack.enter_context(pysam.VariantFile(self.vcf))
@@ -150,7 +150,14 @@ class Query:
                     else:
                         raise
 
-                probes_for_gene = self._create_probes_for_gene_variants(gene, entries)
+                conf_entries = [
+                    entry
+                    for entry in entries
+                    if get_genotype_confidence(entry) >= gt_conf_threshold
+                ]
+                probes_for_gene = self._create_probes_for_gene_variants(
+                    gene, conf_entries
+                )
                 query_probes += probes_for_gene
 
         return query_probes
@@ -490,7 +497,9 @@ def main():
         Path("test_cases/pandora_genotyped.vcf"),
         Path("test_cases/pandora.consensus.fq.gz"),
     )
-    query_probes = query.make_probes()
+    gt_conf = 0
+    query_probes = query.make_probes(gt_conf)
+    # query_probes = query.make_probes(snakemake.wildcards.gt_conf)
     # query_probes_path = Path(snakemake.output.query_probes)
     query_probes_path = Path("test_cases/query_probes.fa")
     with query_probes_path.open("w") as fh:
