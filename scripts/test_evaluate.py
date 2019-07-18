@@ -326,6 +326,7 @@ class TestQuery:
 
         assert actual == expected
 
+
 def test_isInvalidVcfEntry_withNoneGenotype_returnTrue():
     entry = retrieve_entry_from_test_vcf(0)
     assert is_invalid_vcf_entry(entry)
@@ -896,3 +897,87 @@ def test_AssignVariantsToIntervals_twoVariantInIntervalReturnsOneMapping():
     }
 
     assert actual == expected
+
+
+class TestMapPanelToProbes:
+    def test_noPanelProbesMapToQueryProbesReturnsEmptyList(self):
+        panel = TEST_PANEL
+        probes = TEST_CASES / "make_probes_3.fa"
+
+        actual = map_panel_to_probes(panel, probes)
+        expected = []
+
+        assert actual == expected
+
+    def test_onePanelProbeMapsToQueryProbesReturnOneRecord(self):
+        panel = TEST_CASES / "ref_panel_1.fa"
+        probes = TEST_CASES / "query_probes_1.fa"
+
+        actual = map_panel_to_probes(panel, probes)
+        expected_num_records = 1
+        assert len(actual) == expected_num_records
+
+        actual_sequences = [record.query_alignment_sequence for record in actual]
+        expected_sequences = ["CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC"]
+
+        assert actual_sequences == expected_sequences
+
+    def test_onePanelProbeMapsToQueryProbesWithTwoMismatchesReturnOneRecord(self):
+        panel = TEST_CASES / "ref_panel_1.fa"
+        probes = TEST_CASES / "query_probes_1a.fa"
+
+        actual = map_panel_to_probes(panel, probes)
+        actual_query_sequences = [record.get_reference_sequence() for record in actual]
+        expected_query_sequences = ["CCCCCCCCCCCCCCaCCCCCCCCCTCCCCCCCCCCCaCCCCCCCCCCCC"]
+
+        assert actual_query_sequences == expected_query_sequences
+
+        actual_ref_sequences = [record.query_alignment_sequence for record in actual]
+        expected_ref_sequences = ["CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC"]
+
+        assert actual_ref_sequences == expected_ref_sequences
+
+    def test_onePanelProbeMapsToTwoQueryProbesTwoMismatchesInFirstReturnsSecond(self):
+        panel = TEST_CASES / "ref_panel_1.fa"
+        probes = TEST_CASES / "query_probes_2.fa"
+
+        actual = map_panel_to_probes(panel, probes)
+        actual_query_sequences = [record.get_reference_sequence() for record in actual]
+        expected_query_sequences = ["CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC"]
+
+        assert actual_query_sequences == expected_query_sequences
+
+        actual_ref_sequences = [record.query_alignment_sequence for record in actual]
+        expected_ref_sequences = ["CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC"]
+
+        assert actual_ref_sequences == expected_ref_sequences
+
+    def test_TwoPanelProbesMapToOneQueryProbeReturnsTwoRecords(self):
+        panel = TEST_CASES / "ref_panel_2.fa"
+        probes = TEST_CASES / "query_probes_3.fa"
+
+        actual = map_panel_to_probes(panel, probes)
+        actual_query_sequences = [record.get_reference_sequence() for record in actual]
+        expected_query_sequences = ["CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC", "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC"]
+
+        assert actual_query_sequences == expected_query_sequences
+
+        actual_ref_sequences = [record.query_alignment_sequence for record in actual]
+        expected_ref_sequences = ['CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC', "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC"]
+
+        assert actual_ref_sequences == expected_ref_sequences
+
+    def test_TwoPanelProbesMapToOneQueryProbeEachReturnsTwoRecords(self):
+        panel = TEST_CASES / "ref_panel_2.fa"
+        probes = TEST_CASES / "query_probes_4.fa"
+
+        actual = map_panel_to_probes(panel, probes)
+        actual_query_sequences = [record.get_reference_sequence() for record in actual]
+        expected_query_sequences = ["CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC", "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC"]
+
+        assert actual_query_sequences == expected_query_sequences
+
+        actual_ref_sequences = [record.query_alignment_sequence for record in actual]
+        expected_ref_sequences = ['CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC', "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC"]
+
+        assert actual_ref_sequences == expected_ref_sequences

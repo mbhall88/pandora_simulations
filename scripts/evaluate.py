@@ -164,7 +164,9 @@ class Query:
         variants = [entry for entry in variants if not is_invalid_vcf_entry(entry)]
 
         if any_entries_overlap(variants):
-            raise OverlappingRecordsError(f"Found overlapping variant records in {str(self.vcf)}")
+            raise OverlappingRecordsError(
+                f"Found overlapping variant records in {str(self.vcf)}"
+            )
 
         intervals = merge_overlap_intervals(
             [self.calculate_probe_boundaries_for_entry(variant) for variant in variants]
@@ -359,6 +361,16 @@ def map_probes_to_panel(probes: str, reference_panel: Path, threads=1) -> dict:
     return results
 
 
+def map_panel_to_probes(
+    panel: Path, probes: Path, threads: int = 1
+) -> List[pysam.AlignedSegment]:
+    bwa = BWA(threads)
+    bwa.index(str(probes))
+    header, sam = bwa.align(panel.read_text())
+
+    return [record for record in sam if not is_mapping_invalid(record)]
+
+
 def write_results(results: dict, output: Path):
     with output.open("w") as fh:
         json.dump(results, fh, indent=4)
@@ -463,10 +475,16 @@ def main():
         Path("test_cases/pandora.consensus.fq.gz"),
     )
     query_probes = query.make_probes()
+    # query_probes_path = Path(snakemake.output.query_probes)
+    query_probes_path = Path("test_cases/query_probes.fa")
+    with query_probes_path.open("w") as fh:
+        fh.write(query_probes)
 
     # probe_results = map_probes_to_panel(
     #     query_probes, reference_panel, snakemake.threads
     # )
+    alignment = map_panel_to_probes(reference_panel, query_probes_path)
+    # todo: convert alignment into results
     probe_results = map_probes_to_panel(query_probes, reference_panel, 2)
     # probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
     probe_results["total_reference_sites"] = 400
