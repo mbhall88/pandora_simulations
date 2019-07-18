@@ -693,7 +693,7 @@ def test_candidateContainsExpectedSnp_correctSnpCalled_returnTrue():
         header,
     )
 
-    assert candidate_contains_expected_snp(record)
+    assert record_contains_expected_snp(record)
 
 
 def test_candidateContainsExpectedSnp_incorrectSnpCalled_returnFalse():
@@ -703,7 +703,7 @@ def test_candidateContainsExpectedSnp_incorrectSnpCalled_returnFalse():
         header,
     )
 
-    assert not candidate_contains_expected_snp(record)
+    assert not record_contains_expected_snp(record)
 
 
 def test_candidateContainsExpectedSnp_variantInSoftClippedRegion_returnFalse():
@@ -713,7 +713,7 @@ def test_candidateContainsExpectedSnp_variantInSoftClippedRegion_returnFalse():
         header,
     )
 
-    assert not candidate_contains_expected_snp(record)
+    assert not record_contains_expected_snp(record)
 
 
 def test_candidateContainsExpectedSnp_variantPositionNotInAlignment_returnFalse():
@@ -723,7 +723,7 @@ def test_candidateContainsExpectedSnp_variantPositionNotInAlignment_returnFalse(
         header,
     )
 
-    assert not candidate_contains_expected_snp(record)
+    assert not record_contains_expected_snp(record)
 
 
 def test_NoOverlappingIntervals_NoChange():
@@ -778,7 +778,7 @@ def test_FindIndexInIntervals_emptyIntervalsReturnsNegativeOne():
 
 
 def test_FindIndexInIntervals_queryNotInIntervalsReturnsNegativeOne():
-    intervals = [[3, 7], [9, 20]]
+    intervals = [(3, 7), (9, 20)]
     query = 2
 
     actual = find_index_in_intervals(intervals, query)
@@ -788,7 +788,7 @@ def test_FindIndexInIntervals_queryNotInIntervalsReturnsNegativeOne():
 
 
 def test_FindIndexInIntervals_queryInFirstIntervalsReturnsZero():
-    intervals = [[3, 7], [9, 20]]
+    intervals = [(3, 7), (9, 20)]
     query = 5
 
     actual = find_index_in_intervals(intervals, query)
@@ -798,7 +798,7 @@ def test_FindIndexInIntervals_queryInFirstIntervalsReturnsZero():
 
 
 def test_FindIndexInIntervals_queryInSecondIntervalsReturnsOne():
-    intervals = [[3, 7], [9, 20]]
+    intervals = [(3, 7), (9, 20)]
     query = 14
 
     actual = find_index_in_intervals(intervals, query)
@@ -808,7 +808,7 @@ def test_FindIndexInIntervals_queryInSecondIntervalsReturnsOne():
 
 
 def test_FindIndexInIntervals_queryEqualsStartOfFirstIntervalReturnsZero():
-    intervals = [[3, 7], [9, 20]]
+    intervals = [(3, 7), (9, 20)]
     query = 3
 
     actual = find_index_in_intervals(intervals, query)
@@ -818,7 +818,7 @@ def test_FindIndexInIntervals_queryEqualsStartOfFirstIntervalReturnsZero():
 
 
 def test_FindIndexInIntervals_queryEqualsEndOfFirstIntervalReturnsZero():
-    intervals = [[3, 7], [9, 20]]
+    intervals = [(3, 7), (9, 20)]
     query = 7
 
     actual = find_index_in_intervals(intervals, query)
@@ -828,7 +828,7 @@ def test_FindIndexInIntervals_queryEqualsEndOfFirstIntervalReturnsZero():
 
 
 def test_FindIndexInIntervals_queryGreaterthanLastIntervalReturnsNegativeOne():
-    intervals = [[3, 7], [9, 20]]
+    intervals = [(3, 7), (9, 20)]
     query = 70
 
     actual = find_index_in_intervals(intervals, query)
@@ -958,12 +958,18 @@ class TestMapPanelToProbes:
 
         actual = map_panel_to_probes(panel, probes)
         actual_query_sequences = [record.get_reference_sequence() for record in actual]
-        expected_query_sequences = ["CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC", "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC"]
+        expected_query_sequences = [
+            "CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC",
+            "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC",
+        ]
 
         assert actual_query_sequences == expected_query_sequences
 
         actual_ref_sequences = [record.query_alignment_sequence for record in actual]
-        expected_ref_sequences = ['CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC', "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC"]
+        expected_ref_sequences = [
+            "CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC",
+            "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC",
+        ]
 
         assert actual_ref_sequences == expected_ref_sequences
 
@@ -973,11 +979,65 @@ class TestMapPanelToProbes:
 
         actual = map_panel_to_probes(panel, probes)
         actual_query_sequences = [record.get_reference_sequence() for record in actual]
-        expected_query_sequences = ["CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC", "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC"]
+        expected_query_sequences = [
+            "CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC",
+            "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC",
+        ]
 
         assert actual_query_sequences == expected_query_sequences
 
         actual_ref_sequences = [record.query_alignment_sequence for record in actual]
-        expected_ref_sequences = ['CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC', "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC"]
+        expected_ref_sequences = [
+            "CCCCCCCCCCCCCCCCCCCCCCCCTCCCCCCCCCCCCCCCCCCCCCCCC",
+            "CCCCCCCCCCCCCACCCCCCCCCTCCCCCCCCCCCACCCCCCCCCCC",
+        ]
 
         assert actual_ref_sequences == expected_ref_sequences
+
+
+class TestGetResultsFromAlignment:
+    @staticmethod
+    def empty_results():
+        return {
+            "snps_called_correctly": [],
+            "mismatches": [],
+            "ids": [],
+            "ref_ids": [],
+            "reference_sites_called": 0,
+        }
+
+    def test_emptyAlignmentReturnsEmptyResults(self):
+        alignment = []
+
+        actual = get_results_from_alignment(alignment)
+        expected = dict()
+
+        assert actual == expected
+
+    def test_OneRecordInAlignmentVariantNotCoveredReturnsEmptyResults(self):
+        query_probe_name = "GC1_interval=(0, 51)"
+        header = create_sam_header(query_probe_name, 51)
+        record = pysam.AlignedSegment.fromstring(
+            f"A25T	2	{query_probe_name}	26	48	25M	*	0	0	AAAAAAAAAAAAAAAAAAAAAAAAA	*	NM:i:0	MD:Z:25	AS:i:25	XS:i:53",
+            header,
+        )
+        alignment = [record]
+
+        actual = get_results_from_alignment(alignment)
+        expected = {"A25T": False}
+
+        assert actual == expected
+
+    def test_OneRecordInAlignmentVariantCoveredReturnsResultsForOneVariant(self):
+        query_probe_name = "GC1_interval=(0, 51)"
+        header = create_sam_header(query_probe_name, 51)
+        record = pysam.AlignedSegment.fromstring(
+            f"A25T	2	{query_probe_name}	1	48	105M	*	0	0	{'A' * 100}T{'A'*4}	*	NM:i:0	MD:Z:105	AS:i:105	XS:i:53",
+            header,
+        )
+        alignment = [record]
+
+        actual = get_results_from_alignment(alignment)
+        expected = {"A25T": True}
+
+        assert actual == expected

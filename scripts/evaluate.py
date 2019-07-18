@@ -342,7 +342,9 @@ def map_probes_to_panel(probes: str, reference_panel: Path, threads=1) -> dict:
     for record in sam:
         if is_mapping_invalid(record):
             continue
-        elif not (record.reference_start <= 100 < record.reference_end):
+        elif not (
+            record.reference_start <= REF_PANEL_FLANK_WIDTH < record.reference_end
+        ):
             continue
         valid_pandora_calls += 1
 
@@ -371,12 +373,26 @@ def map_panel_to_probes(
     return [record for record in sam if not is_mapping_invalid(record)]
 
 
+def get_results_from_alignment(alignment: List[pysam.AlignedSegment]) -> dict:
+    probes_mapped = dict()
+
+    for entry in alignment:
+        if entry.is_unmapped or (
+            entry.query_name in probes_mapped and probes_mapped[entry.query_name]
+        ):
+            continue
+
+        probes_mapped[entry.query_name] = record_contains_expected_snp(entry)
+
+    return probes_mapped
+
+
 def write_results(results: dict, output: Path):
     with output.open("w") as fh:
         json.dump(results, fh, indent=4)
 
 
-def candidate_contains_expected_snp(record) -> bool:
+def record_contains_expected_snp(record: pysam.AlignedSegment) -> bool:
     expected_base = record.query_name[-1]
 
     for query_pos, ref_pos, ref_base in record.get_aligned_pairs(with_seq=True):
@@ -402,7 +418,7 @@ def evaluate_candidates(candidate_files: List[Path], panel: str, threads: int) -
             ):
                 continue
 
-            if candidate_contains_expected_snp(entry):
+            if record_contains_expected_snp(entry):
                 probes_mapped_to_candidate[entry.query_name] = True
                 slices_containing_mutation.add(candidate)
             else:
@@ -484,8 +500,8 @@ def main():
     #     query_probes, reference_panel, snakemake.threads
     # )
     alignment = map_panel_to_probes(reference_panel, query_probes_path)
-    # todo: convert alignment into results
-    probe_results = map_probes_to_panel(query_probes, reference_panel, 2)
+    probe_results = get_results_from_alignment(alignment)
+    # todo: convert probe_results into expected result format
     # probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
     probe_results["total_reference_sites"] = 400
 
