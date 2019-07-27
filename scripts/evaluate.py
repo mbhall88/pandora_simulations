@@ -135,7 +135,7 @@ class Query:
         self._min_probe_length = min_probe_length
         self._entry_number = 0
 
-    def make_probes(self, gt_conf_threshold: float = 0) -> str:
+    def make_probes(self) -> str:
         query_probes = ""
         with ExitStack() as stack:
             vcf = stack.enter_context(pysam.VariantFile(self.vcf))
@@ -148,16 +148,9 @@ class Query:
                     if str(error).startswith("invalid contig"):
                         continue
                     else:
-                        raise
+                        raise error
 
-                conf_entries = [
-                    entry
-                    for entry in entries
-                    if get_genotype_confidence(entry) >= gt_conf_threshold
-                ]
-                probes_for_gene = self._create_probes_for_gene_variants(
-                    gene, conf_entries
-                )
+                probes_for_gene = self._create_probes_for_gene_variants(gene, entries)
                 query_probes += probes_for_gene
 
         return query_probes
@@ -170,39 +163,52 @@ class Query:
         probes = ""
         variants = [entry for entry in variants if not is_invalid_vcf_entry(entry)]
 
-        if any_entries_overlap(variants):
-            raise OverlappingRecordsError(
-                f"Found overlapping variant records in {str(self.vcf)}"
-            )
+        # if any_entries_overlap(variants):
+        #     raise OverlappingRecordsError(
+        #         f"Found overlapping variant records in {str(self.vcf)}"
+        #     )
 
-        intervals = merge_overlap_intervals(
-            [self.calculate_probe_boundaries_for_entry(variant) for variant in variants]
-        )
+        # intervals = merge_overlap_intervals(
+        #     [self.calculate_probe_boundaries_for_entry(variant) for variant in variants]
+        # )
+        intervals = [
+            self.calculate_probe_boundaries_for_entry(variant) for variant in variants
+        ]
         intervals_to_variants = assign_variants_to_intervals(variants, intervals)
 
-        for interval, this_intervals_variants in intervals_to_variants.items():
+        intervals_to_probes = dict()
+
+        for variant in variants:
+            interval = self.calculate_probe_boundaries_for_entry(variant)
+            if interval in intervals_to_probes and float(
+                intervals_to_probes[interval].name.split("=")[-1]
+            ) > get_genotype_confidence(variant):
+                continue
+
             mutated_consensus = ""
             consensus = gene.sequence[slice(*interval)]
             last_idx = 0
 
-            for variant in this_intervals_variants:
-                start_idx_of_variant_on_consensus = variant.start - interval[0]
-                mutated_consensus += consensus[
-                    last_idx:start_idx_of_variant_on_consensus
-                ]
-                mutated_consensus += get_variant_sequence(variant)
-                last_idx = start_idx_of_variant_on_consensus + variant.rlen
+            start_idx_of_variant_on_consensus = variant.start - interval[0]
+            mutated_consensus += consensus[last_idx:start_idx_of_variant_on_consensus]
+            mutated_consensus += get_variant_sequence(variant)
+            last_idx = start_idx_of_variant_on_consensus + variant.rlen
             mutated_consensus += consensus[last_idx:]
             probe = pysam.FastxRecord()
-            probe.set_name(f"{this_intervals_variants[0].chrom}_interval={interval}")
+            probe.set_name(
+                f"{variant.chrom}_POS={variant.pos}_interval={interval}_GT_CONF={get_genotype_confidence(variant)}".replace(" ", "")
+            )
             probe.set_sequence(mutated_consensus)
+            intervals_to_probes[interval] = probe
+
+        for probe in intervals_to_probes.values():
             probes += str(probe) + "\n"
 
         return probes
 
     def calculate_probe_boundaries_for_entry(
         self, entry: pysam.VariantRecord
-    ) -> List[int]:
+    ) -> Tuple[int, int]:
         variant_len = get_variant_length(entry)
         delta_len = self._min_probe_length - variant_len
         left = [entry.start, entry.start]
@@ -214,7 +220,7 @@ class Query:
             left[0] = max(0, entry.start - flank_width)
             right[1] = entry.stop + flank_width
 
-        return [left[0], right[-1]]
+        return left[0], right[-1]
 
 
 def merge_overlap_intervals(intervals: List[List[int]]) -> List[Tuple[int, int]]:
@@ -384,12 +390,14 @@ def get_results_from_alignment(alignment: List[pysam.AlignedSegment]) -> dict:
     probes_mapped = dict()
 
     for entry in alignment:
-        if entry.is_unmapped or (
-            entry.query_name in probes_mapped and probes_mapped[entry.query_name]
-        ):
+        if entry.is_unmapped:
             continue
-
-        probes_mapped[entry.query_name] = record_contains_expected_snp(entry)
+        if entry.query_name in probes_mapped:
+            raise KeyError(f"{entry.query_name} has already been mapped.")
+        probes_mapped[entry.query_name] = {
+            "correct": record_contains_expected_snp(entry),
+            "id": entry.reference_name,
+        }
 
     return probes_mapped
 
@@ -450,14 +458,20 @@ def any_entries_overlap(entries: List[pysam.VariantRecord]) -> bool:
             this_entry = entries[i]
             next_entry = entries[i + 1]
             if (this_entry.start + get_variant_length(this_entry)) > next_entry.start:
-                return True
+                print(f"{this_entry.pos} overlaps {next_entry.pos}")
+                if get_genotype(this_entry) != get_genotype(next_entry):
+                    print(this_entry.chrom)
+                    print(
+                        f"Genotypes are different: {get_genotype(this_entry)} {get_genotype(next_entry)}"
+                    )
+                # return True
 
     return False
 
 
 def assign_variants_to_intervals(
     variants: List[pysam.VariantRecord], intervals: List[Tuple[int, int]]
-) -> Dict[Tuple[int, int], List[pysam.VariantRecord]]:
+) -> Dict[Tuple[int, int], pysam.VariantRecord]:
     """Assigns each variant to an interval based on the variant's position.
     If a variant doesn't fall within an interval it is not added."""
     interval_to_variants = dict()
@@ -471,9 +485,12 @@ def assign_variants_to_intervals(
             continue
 
         if intervals[i] not in interval_to_variants:
-            interval_to_variants[intervals[i]] = [variant]
+            interval_to_variants[intervals[i]] = variant
         else:
-            interval_to_variants[intervals[i]].append(variant)
+            if get_genotype_confidence(variant) > get_genotype_confidence(
+                interval_to_variants[intervals[i]]
+            ):
+                interval_to_variants[intervals[i]] = variant
 
     return interval_to_variants
 
@@ -497,9 +514,7 @@ def main():
         Path("test_cases/pandora_genotyped.vcf"),
         Path("test_cases/pandora.consensus.fq.gz"),
     )
-    gt_conf = 0
-    query_probes = query.make_probes(gt_conf)
-    # query_probes = query.make_probes(snakemake.wildcards.gt_conf)
+    query_probes = query.make_probes()
     # query_probes_path = Path(snakemake.output.query_probes)
     query_probes_path = Path("test_cases/query_probes.fa")
     with query_probes_path.open("w") as fh:
