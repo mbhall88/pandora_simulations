@@ -1,3 +1,4 @@
+conda_img: "/nfs/research1/zi/mbhall/Software/Singularity_images/miniconda3.v4.5.12.simg"
 num_genes:             100
 num_reads_to_simulate: 30000
 prg_nesting_lvls:

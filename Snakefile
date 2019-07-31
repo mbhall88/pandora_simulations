@@ -4,7 +4,6 @@ from pathlib import Path
 from scripts.simulation import Simulation
 
 
-CONDA_IMG = "docker://continuumio/miniconda3:4.5.12"
 
 
 def extract_gene_name(string: str) -> str:
@@ -40,6 +39,7 @@ def generate_all_simulations(config: dict, genes: list) -> list:
 # ======================================================
 configfile: "config.yaml"
 
+CONDA_IMG = config["conda_img"]
 # ======================================================
 # Rules
 # ======================================================

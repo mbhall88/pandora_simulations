@@ -496,49 +496,38 @@ def assign_variants_to_intervals(
 
 
 def main():
-    # reference_panel = Path(snakemake.output.reference_panel)
-    reference_panel = Path("test_cases/ref_panel.fa")
-    # reference = Reference(
-    #     Path(snakemake.input.reference_vcf), Path(snakemake.input.reference_seq)
-    # )
+    reference_panel = Path(snakemake.output.reference_panel)
+
     reference = Reference(
-        Path("test_cases/combined_random_paths_mutated.vcf"),
-        Path("test_cases/combined_random_paths_mutated_1.fasta"),
+       Path(snakemake.input.reference_vcf), Path(snakemake.input.reference_seq)
     )
+
     reference.make_panel(reference_panel)
 
-    # query = Query(
-    #     Path(snakemake.input.query_vcf), Path(snakemake.input.pandora_consensus)
-    # )
     query = Query(
-        Path("test_cases/pandora_genotyped.vcf"),
-        Path("test_cases/pandora.consensus.fq.gz"),
+       Path(snakemake.input.query_vcf), Path(snakemake.input.pandora_consensus)
     )
+
     query_probes = query.make_probes()
-    # query_probes_path = Path(snakemake.output.query_probes)
-    query_probes_path = Path("test_cases/query_probes.fa")
+
+    query_probes_path = Path(snakemake.output.query_probes)
+    
     with query_probes_path.open("w") as fh:
         fh.write(query_probes)
 
-    # probe_results = map_probes_to_panel(
-    #     query_probes, reference_panel, snakemake.threads
-    # )
-    alignment = map_panel_to_probes(reference_panel, query_probes_path)
+    alignment = map_panel_to_probes(reference_panel, query_probes_path, snakemake.threads)
     probe_results = get_results_from_alignment(alignment)
     # todo: convert probe_results into expected result format
-    # probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
-    probe_results["total_reference_sites"] = 400
+    probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
 
     panel = reference_panel.read_text()
-    # candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
-    # candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
-    # candidate_results = evaluate_candidates(candidate_files, panel, snakemake.threads)
+    candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
+    candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
+    candidate_results = evaluate_candidates(candidate_files, panel, snakemake.threads)
 
-    # results = {**probe_results, **candidate_results}
-    results = {**probe_results}
+    results = {**probe_results, **candidate_results}
 
-    # write_results(results, Path(snakemake.output.results))
-    write_results(results, Path("test_cases/results.json"))
+    write_results(results, Path(snakemake.output.results))
 
 
 if __name__ == "__main__":

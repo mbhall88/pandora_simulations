@@ -8,6 +8,7 @@ import argparse
 from sklearn.cluster import KMeans
 import numpy as np
 import gzip
+from itertools import groupby
 
 def contains_only(seq, aset):
     """ Check whether sequence seq contains ONLY items in aset. """
@@ -18,18 +19,26 @@ def contains_only(seq, aset):
 def get_interval_seqs(interval_alignment):
     """Replace - with nothing, remove seqs containing N or other non-allowed letters
     and duplicate sequences containing RYKMSW, replacing with AGCT alternatives """
-    allowed = ['A','C','G','T','R','Y','K','M','S','W']
-    iupac = {'R': ['G', 'A'], 'Y': ['T', 'C'], 'K': ['G', 'T'], 'M': ['A', 'C'], 'S': ['G', 'C'], 'W': ['A', 'T']}
+    allowed = ['A','C','G','T','R','Y','K','M','S','W', 'N']
+    iupac = {'R': ['G', 'A'], 'Y': ['T', 'C'], 'K': ['G', 'T'], 'M': ['A', 'C'], 'S': ['G', 'C'], 'W': ['A', 'T'], 'N': ['A', 'C', 'G', 'T']}
     seqs = []
     for s in list(remove_duplicates([str(record.seq).replace('-', '').upper() for record in interval_alignment])):
         if contains_only(s, allowed):
+            if 'N' in s:
+                groups = groupby(s)
+                base_and_consecutive_count = [(label, sum(1 for _ in group)) for label, group in groups]
+                for base, count in base_and_consecutive_count:
+                    if base=='N' and count >= 2:
+                        print("A sequence contains >=2 Ns in a row - redo sequence curation because this is nonsense")
+                        assert base=='N' and count < 2
+
             new_seqs = [s]
             for letter in iupac.keys():
                 letter_seqs = []
                 for t in new_seqs:
                     if letter in t:
-                        letter_seqs.append(t.replace(letter, iupac[letter][0]))
-                        letter_seqs.append(t.replace(letter, iupac[letter][1]))
+                        for iupac_replacement in iupac[letter]:
+                            letter_seqs.append(t.replace(letter, iupac_replacement))
                     else:
                         letter_seqs.append(t)
                 new_seqs = letter_seqs
@@ -594,8 +603,8 @@ def main():
     parser.add_argument("-f", "--alignment_format", dest='alignment_format', action='store', default="fasta",
                         help='alignment_Format of MSA, must be a biopython AlignIO input alignment_format. See '
                              'http://biopython.org/wiki/AlignIO. Default: fasta')
-    parser.add_argument("--max_nesting", dest='max_nesting', action='store', type=int, default=10,
-                        help='Maximum number of levels to use for nesting. Default: 10')
+    parser.add_argument("--max_nesting", dest='max_nesting', action='store', type=int, default=5,
+                        help='Maximum number of levels to use for nesting. Default: 5')
     parser.add_argument("--min_match_length", dest='min_match_length', action='store', type=int, default=7,
                         help='Minimum number of consecutive characters which must be identical for a match. '
                              'Default: 7')
