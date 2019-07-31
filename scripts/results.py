@@ -1,25 +1,57 @@
 import json
+import re
 from pathlib import Path
-from typing import List
+from collections import defaultdict
+from typing import List, Tuple
+
+
+class RegexError(Exception):
+    pass
 
 
 class VariantCall:
-    def __init__(self, name, correct, mismatches, ref_id):
-        self.name = name
-        parts = name.split("_")
-        self.confidence = float(parts[-1].replace("CONF", ""))
-        self.entry = int(parts[-2].replace("entry", ""))
-        self.pos = int(parts[-3].replace("pos", ""))
+    def __init__(self, name, correct, ref_id):
+        self.name = name.strip()
+        self.correct = correct
         self.ref_pos = int(ref_id[1:-1])
-        self.gene = name.split("_pos")[0]
-        self.correct = bool(correct)
-        self.mismatches = int(mismatches)
 
     def __eq__(self, other):
         return self.name == other.name
 
     def __hash__(self):
         return hash(self.name)
+
+    def gene(self) -> str:
+        regex = re.compile(r"(.+)_POS=")
+        match = regex.search(self.name)
+        if not match:
+            raise RegexError(f"Gene name could not be parsed from {self.name}")
+
+        return match.group(1)
+
+    def pos(self) -> int:
+        regex = re.compile(r"POS=(\d+)_interval")
+        match = regex.search(self.name)
+        if not match:
+            raise RegexError(f"POS could not be parsed from {self.name}")
+
+        return int(match.group(1))
+
+    def interval(self) -> Tuple[int, int]:
+        regex = re.compile(r"interval=\((\d+),(\d+)\)_GT_CONF")
+        match = regex.search(self.name)
+        if not match:
+            raise RegexError(f"POS could not be parsed from {self.name}")
+
+        return int(match.group(1)), int(match.group(2))
+
+    def gt_conf(self) -> float:
+        regex = re.compile(r"GT_CONF=([0-9]+\.?[0-9]*)")
+        match = regex.search(self.name)
+        if not match:
+            raise RegexError(f"GT_CONF could not be parsed from {self.name}")
+
+        return float(match.group(1))
 
 
 class Result:
@@ -55,7 +87,7 @@ class Result:
         self.variant_calls = self._get_variant_calls()
 
     def unique_snps_called(self) -> int:
-        return self.data.get("reference_sites_called", 0)
+        return len(self.data.get("pandora_calls", {}))
 
     def total_denovo_slices(self) -> int:
         return self.data.get("total_slices", 0)
@@ -70,18 +102,12 @@ class Result:
         return self.data.get("variant_sites_denovo_correctly_discovered", 0)
 
     def _get_variant_calls(self) -> List[VariantCall]:
-        try:
-            variant_calls = [
-                VariantCall(name, correct, mismatch, ref_id)
-                for name, correct, mismatch, ref_id in zip(
-                    self.data["ids"],
-                    self.data["snps_called_correctly"],
-                    self.data["mismatches"],
-                    self.data["ref_ids"],
-                )
-            ]
-        except KeyError:
-            variant_calls = []
+        calls = self.data.get("pandora_calls", {})
+        variant_calls = []
+        for ref_id, call_data in calls.items():
+            name = call_data["id"]
+            correct = call_data["correct"]
+            variant_calls.append(VariantCall(name, correct, ref_id))
 
         return variant_calls
 
@@ -107,12 +133,9 @@ class Result:
             return 0.0
 
     def _calculate_metrics(self, conf_threshold=0):
-        position_calls = dict()
+        position_calls = defaultdict(list)
         for call in self.variant_calls:
-            try:
-                position_calls[call.ref_pos - 1].append((call.correct, call.confidence))
-            except KeyError:
-                position_calls[call.ref_pos - 1] = [(call.correct, call.confidence)]
+            position_calls[call.ref_pos - 1].append((call.correct, call.gt_conf()))
 
         positive_calls = 0
         true_positives = 0

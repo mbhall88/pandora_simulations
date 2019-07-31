@@ -516,12 +516,11 @@ def main():
         fh.write(query_probes)
 
     alignment = map_panel_to_probes(reference_panel, query_probes_path, snakemake.threads)
-    probe_results = get_results_from_alignment(alignment)
+    probe_results = dict(pandora_calls=get_results_from_alignment(alignment))
     # todo: convert probe_results into expected result format
     probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
 
     panel = reference_panel.read_text()
-    candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
     candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
     candidate_results = evaluate_candidates(candidate_files, panel, snakemake.threads)
 

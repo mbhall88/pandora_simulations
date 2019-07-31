@@ -1,19 +1,12 @@
 {
-  "reference_sites_called": 7,
-  "ids": [
-    "id1_pos1_entry0_CONF3",
-    "id2_pos2_entry1_CONF5.6"
-  ],
-  "snps_called_correctly": [
-    true,
-    false
-  ],
-  "mismatches": [
-    0,
-    3
-  ],
-  "ref_ids": [
-    "A44C",
-    "A44C"
-  ]
+  "pandora_calls": {
+    "A44C": {
+      "id": "id1_POS=1_interval=(0,1)_GT_CONF=3",
+      "correct": true
+    },
+    "A45C": {
+      "id": "id1_POS=2_interval=(1,2)_GT_CONF=5.6",
+      "correct": false
+    }
+  }
 }

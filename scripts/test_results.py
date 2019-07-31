@@ -9,28 +9,242 @@ TEST_JSON = TEST_CASES / "test.json"
 
 class TestVariantCall:
     def test_equality_twoEqualVariantCalls_returnTrue(self):
-        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
-        var2 = VariantCall("name_pos1_entry0_CONF8.8", True, 7, "A44C")
+        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, "A44C")
+        var2 = VariantCall("name_pos1_entry0_CONF8.8", True, "A44C")
 
         assert var1 == var2
 
     def test_equality_twoNonEqualVariantCalls_returnFalse(self):
-        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
-        var2 = VariantCall("name_pos1_entry0_CONF8.7", True, 0, "A44C")
+        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, "A44C")
+        var2 = VariantCall("name_pos1_entry0_CONF8.7", True, "A44C")
 
         assert not var1 == var2
 
     def test_nonEquality_twoEqualVariantCalls_returnFalse(self):
-        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
-        var2 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
+        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, "A44C")
+        var2 = VariantCall("name_pos1_entry0_CONF8.8", True, "A44C")
 
         assert not var1 != var2
 
     def test_nonEquality_twoNonEqualVariantCalls_returnTrue(self):
-        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, 0, "A44C")
-        var2 = VariantCall("name_pos1_entry0_CONF8.7", True, 0, "A44C")
+        var1 = VariantCall("name_pos1_entry0_CONF8.8", True, "A44C")
+        var2 = VariantCall("name_pos1_entry0_CONF8.7", True, "A44C")
 
         assert var1 != var2
+
+    def test_gene_emptyNameRaisesRegexError(self):
+        name = ""
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.gene()
+
+    def test_gene_noPOSInNameRaisesRegexError(self):
+        name = "182_interval=(144,219)_GT"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.gene()
+
+    def test_gene_geneWithNoUnderscoresReturnsCorrect(self):
+        name = "GC00000742_POS=182_interval=(144,219)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        actual = var.gene()
+        expected = "GC00000742"
+
+        assert actual == expected
+
+    def test_gene_geneWithUnderscoresReturnsCorrect(self):
+        name = "GC00000742_6_p1_POS=182_interval=(144,219)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        actual = var.gene()
+        expected = "GC00000742_6_p1"
+
+        assert actual == expected
+
+    def test_gene_nameWithSpaceAtStartReturnsCorrect(self):
+        name = " GC00000742_6_p1_POS=182_interval=(144,219)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        actual = var.gene()
+        expected = "GC00000742_6_p1"
+
+        assert actual == expected
+
+    def test_pos_emptyPOSRaisesRegexError(self):
+        name = ""
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.pos()
+
+    def test_pos_noIntervalInNameRaisesRegexError(self):
+        name = "(144,219)_GT"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.pos()
+
+    def test_pos_posIs182ReturnsCorrect(self):
+        name = "GC00000742_POS=182_interval=(144,219)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        actual = var.pos()
+        expected = 182
+
+        assert actual == expected
+
+    def test_pos_posNotAnIntegerRaisesRegexError(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,219)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.pos()
+
+    def test_interval_emptyNameRaisesRegexError(self):
+        name = ""
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.interval()
+
+    def test_interval_intervalNotInNameRaisesRegexError(self):
+        name = "GC00000742_6_p1_POS=18"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.interval()
+
+    def test_interval_intervalEndNotInNameRaisesRegexError(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.interval()
+
+    def test_interval_intervalStartNotInNameRaisesRegexError(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(,144)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.interval()
+
+    def test_interval_intervalStartIsStringRaisesRegexError(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(foo,144)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.interval()
+
+    def test_interval_intervalEndIsStringRaisesRegexError(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,foo)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.interval()
+
+    def test_interval_intervalCorrectlyFormattedReturnsTupleOfTwoInts(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,200)_GT_CONF=129.43"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        actual = var.interval()
+        expected = (144, 200)
+
+        assert actual == expected
+
+    def test_gtConf_emptyNameRaisesRegexError(self):
+        name = ""
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.gt_conf()
+
+    def test_gtConf_gtConfNotInNameRaisesRegexError(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,200)_"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.gt_conf()
+
+    def test_gtConf_gtConfIsStringRaisesRegexError(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,200)_GT_CONF=foo"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        with pytest.raises(RegexError):
+            actual = var.gt_conf()
+
+    def test_gtConf_gtConfIsIntReturnsAsFloat(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,200)_GT_CONF=129"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        actual = var.gt_conf()
+        expected = 129.0
+
+        assert actual == expected
+
+    def test_gtConf_gtConfIsFloatReturnsAsIs(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,200)_GT_CONF=129.77"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        actual = var.gt_conf()
+        expected = 129.77
+
+        assert actual == expected
+
+    def test_gtConf_gtConfHasNewlineAtTheEndReturnsCorrectGtConf(self):
+        name = "GC00000742_6_p1_POS=foo_interval=(144,200)_GT_CONF=129.77\n"
+        correct = True
+        ref_id = "A6T"
+        var = VariantCall(name, correct, ref_id)
+
+        actual = var.gt_conf()
+        expected = 129.77
+
+        assert actual == expected
 
 
 class TestResult:
@@ -80,11 +294,13 @@ class TestResult:
         result.load_data_from_json(TEST_JSON)
 
         expected = {
-            "reference_sites_called": 7,
-            "ids": ["id1_pos1_entry0_CONF3", "id2_pos2_entry1_CONF5.6"],
-            "snps_called_correctly": [True, False],
-            "mismatches": [0, 3],
-            "ref_ids": ["A44C", "A44C"],
+            "pandora_calls": {
+                "A44C": {"id": "id1_POS=1_interval=(0,1)_GT_CONF=3", "correct": True},
+                "A45C": {
+                    "id": "id1_POS=2_interval=(1,2)_GT_CONF=5.6",
+                    "correct": False,
+                },
+            }
         }
         actual = result.data
 
@@ -103,7 +319,7 @@ class TestResult:
         result.load_data_from_json(TEST_JSON)
 
         actual = result.unique_snps_called()
-        expected = 7
+        expected = 2
 
         assert actual == expected
 
@@ -121,8 +337,8 @@ class TestResult:
 
         actual = result.variant_calls
         expected = [
-            VariantCall("id1_pos1_entry0_CONF3", True, 0, "A44C"),
-            VariantCall("id2_pos2_entry1_CONF5.6", False, 3, "A44C"),
+            VariantCall("id1_POS=1_interval=(0,1)_GT_CONF=3", True, "A44C"),
+            VariantCall("id1_POS=2_interval=(1,2)_GT_CONF=5.6", False, "A45C"),
         ]
 
         assert actual == expected
@@ -217,15 +433,20 @@ class TestResult:
     def test_overallRecall_noFalseNegatives_returnOne(self):
         result = Result.from_dict(dict(num_snps=2))
         result.data = dict(
-            reference_sites_called=2,
-            ids=[
-                "id1_pos1_entry0_CONF3",
-                "id2_pos1_entry0_CONF3",
-                "id3_pos5_entry0_CONF3",
-            ],
-            snps_called_correctly=[True, False, True],
-            mismatches=[0, 2, 0],
-            ref_ids=["A1C", "T1C", "T5G"],
+            pandora_calls=dict(
+                A1C=dict(
+                    id="GC00000742_6_p1_POS=foo_interval=(144,200)_GT_CONF=129.43",
+                    correct=True,
+                ),
+                T1C=dict(
+                    id="GC00000742_6_p2_POS=foo_interval=(144,200)_GT_CONF=129.43",
+                    correct=False,
+                ),
+                T5G=dict(
+                    id="GC00000742_6_p3_POS=foo_interval=(144,200)_GT_CONF=129.43",
+                    correct=True,
+                ),
+            )
         )
         result.variant_calls = result._get_variant_calls()
 
