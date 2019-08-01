@@ -481,12 +481,18 @@ class TestResult:
     def test_overallRecall_halfTrueVariants_returnHalf(self):
         result = Result.from_dict(dict(num_snps=4))
         result.data = dict(
-            reference_sites_called=2,
-            ids=["id1_pos1_entry0_CONF3", "id2_pos2_entry0_CONF3"],
-            snps_called_correctly=[True, True],
-            mismatches=[1, 2],
-            ref_ids=["A1T", "C2T"],
+            pandora_calls=dict(
+                A1T=dict(
+                    id="GC00000742_6_p1_POS=1_interval=(144,200)_GT_CONF=3",
+                    correct=True,
+                ),
+                C2T=dict(
+                    id="GC00000742_6_p2_POS=2_interval=(144,200)_GT_CONF=3",
+                    correct=True,
+                ),
+            )
         )
+
         result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_recall()
@@ -497,12 +503,18 @@ class TestResult:
     def test_overallPrecision_halfTrueVariants_returnHalf(self):
         result = Result.from_dict(dict(num_snps=4))
         result.data = dict(
-            reference_sites_called=2,
-            ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
-            snps_called_correctly=[True, False],
-            mismatches=[1, 2],
-            ref_ids=["A1T", "T2G"],
+            pandora_calls=dict(
+                A1T=dict(
+                    id="GC00000742_6_p1_POS=1_interval=(144,200)_GT_CONF=3",
+                    correct=True,
+                ),
+                T2G=dict(
+                    id="GC00000742_6_p2_POS=1_interval=(144,200)_GT_CONF=3",
+                    correct=False,
+                ),
+            )
         )
+
         result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_precision()
@@ -513,12 +525,18 @@ class TestResult:
     def test_overallPrecision_noFalsePositives_returnOne(self):
         result = Result.from_dict(dict(num_snps=5))
         result.data = dict(
-            reference_sites_called=2,
-            ids=["id1_pos1_entry0_CONF3", "id2_pos1_entry0_CONF3"],
-            snps_called_correctly=[True, True],
-            mismatches=[0, 2],
-            ref_ids=["A1T", "C5T"],
+            pandora_calls=dict(
+                A1T=dict(
+                    id="GC00000742_6_p1_POS=1_interval=(144,200)_GT_CONF=3",
+                    correct=True,
+                ),
+                C5T=dict(
+                    id="GC00000742_6_p2_POS=2_interval=(144,200)_GT_CONF=3",
+                    correct=True,
+                ),
+            )
         )
+
         result.variant_calls = result._get_variant_calls()
 
         actual = result.overall_precision()
