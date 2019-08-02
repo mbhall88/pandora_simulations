@@ -647,6 +647,5 @@ def main():
         s.write("%s\t%d\t%d\t%f\n" % (
             args.MSA, aseq.site - 2, aseq.max_nesting_level_reached, aseq.prop_in_match_intervals))
 
-
 if __name__ == "__main__" and __package__ is None:
     main()
