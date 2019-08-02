@@ -7,7 +7,7 @@ import json
 from typing import List, Tuple, Dict
 
 REF_PANEL_FLANK_WIDTH = 25
-QUERY_PROBE_FLANK_WIDTH = 25
+QUERY_PROBE_FLANK_WIDTH = 50
 
 
 class OverlappingRecordsError(Exception):
