@@ -86,12 +86,12 @@ class BWA:
             else:
                 sam_lines.append(line)
 
-        header = pysam.AlignmentHeader.from_text(text=header)
+        header = pysam.AlignmentHeader.from_text(header)
 
         return (
             header,
             [
-                pysam.AlignedSegment.fromstring(sam=sam, AlignmentHeader_header=header)
+                pysam.AlignedSegment.fromstring(sam, header)
                 for sam in sam_lines
                 if sam
             ],
