@@ -56,6 +56,9 @@ for sim in all_simulations:
     files.add(
         f"{sim_path}/evaluation/results.json"
     )
+    files.add(
+        f"{sim_path}/evaluate_no_denovo/results.json"
+    )
 
 
 rule all:
