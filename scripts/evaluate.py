@@ -86,11 +86,15 @@ class BWA:
             else:
                 sam_lines.append(line)
 
-        header = pysam.AlignmentHeader.from_text(header)
+        header = pysam.AlignmentHeader.from_text(text=header)
 
         return (
             header,
-            [pysam.AlignedSegment.fromstring(sam, header) for sam in sam_lines if sam],
+            [
+                pysam.AlignedSegment.fromstring(sam=sam, AlignmentHeader_header=header)
+                for sam in sam_lines
+                if sam
+            ],
         )
 
 
@@ -163,18 +167,9 @@ class Query:
         probes = ""
         variants = [entry for entry in variants if not is_invalid_vcf_entry(entry)]
 
-        # if any_entries_overlap(variants):
-        #     raise OverlappingRecordsError(
-        #         f"Found overlapping variant records in {str(self.vcf)}"
-        #     )
-
-        # intervals = merge_overlap_intervals(
-        #     [self.calculate_probe_boundaries_for_entry(variant) for variant in variants]
-        # )
         intervals = [
             self.calculate_probe_boundaries_for_entry(variant) for variant in variants
         ]
-        intervals_to_variants = assign_variants_to_intervals(variants, intervals)
 
         intervals_to_probes = dict()
 
@@ -196,7 +191,9 @@ class Query:
             mutated_consensus += consensus[last_idx:]
             probe = pysam.FastxRecord()
             probe.set_name(
-                f"{variant.chrom}_POS={variant.pos}_interval={interval}_GT_CONF={get_genotype_confidence(variant)}".replace(" ", "")
+                f"{variant.chrom}_POS={variant.pos}_interval={interval}_GT_CONF={get_genotype_confidence(variant)}".replace(
+                    " ", ""
+                )
             )
             probe.set_sequence(mutated_consensus)
             intervals_to_probes[interval] = probe
@@ -223,7 +220,7 @@ class Query:
         return left[0], right[-1]
 
 
-def merge_overlap_intervals(intervals: List[List[int]]) -> List[Tuple[int, int]]:
+def merge_overlap_intervals(intervals: List[List[int]]) -> List[Tuple[int, ...]]:
     """Checks consecutive intervals and if they overlap it merges them into a
     single interval.
     Args:
@@ -499,33 +496,36 @@ def main():
     reference_panel = Path(snakemake.output.reference_panel)
 
     reference = Reference(
-       Path(snakemake.input.reference_vcf), Path(snakemake.input.reference_seq)
+        Path(snakemake.input.reference_vcf), Path(snakemake.input.reference_seq)
     )
 
     reference.make_panel(reference_panel)
 
     query = Query(
-       Path(snakemake.input.query_vcf), Path(snakemake.input.pandora_consensus)
+        Path(snakemake.input.query_vcf), Path(snakemake.input.pandora_consensus)
     )
 
     query_probes = query.make_probes()
 
     query_probes_path = Path(snakemake.output.query_probes)
-    
+
     with query_probes_path.open("w") as fh:
         fh.write(query_probes)
 
-    alignment = map_panel_to_probes(reference_panel, query_probes_path, snakemake.threads)
+    alignment = map_panel_to_probes(
+        reference_panel, query_probes_path, snakemake.threads
+    )
     probe_results = dict(pandora_calls=get_results_from_alignment(alignment))
     probe_results["total_reference_sites"] = snakemake.wildcards.num_snps
 
     panel = reference_panel.read_text()
 
     candidate_results = dict()
-    if snakemake.input.denovo_dir:
+    if "denovo_dir" in snakemake.input:
         candidate_files = list(Path(snakemake.input.denovo_dir).rglob("*.fa"))
-        candidate_results = evaluate_candidates(candidate_files, panel, snakemake.threads)
-
+        candidate_results = evaluate_candidates(
+            candidate_files, panel, snakemake.threads
+        )
 
     results = {**probe_results, **candidate_results}
 
