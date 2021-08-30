@@ -13,7 +13,6 @@ rule simulate_reads:
         perfect_reads = lambda wildcards: wildcards.read_quality == "perfect",
         num_reads = config["num_reads_to_simulate"],
         extra = "--circular --rnf --seed 88 --unalign-rate 0 ",
-    singularity: CONDA_IMG
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/simulate_reads.log"
     wrapper:

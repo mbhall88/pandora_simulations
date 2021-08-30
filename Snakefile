@@ -4,8 +4,6 @@ from pathlib import Path
 from scripts.simulation import Simulation
 
 
-
-
 def extract_gene_name(string: str) -> str:
     """Extract gene name from panX filenames"""
     return string.split("_na_")[0]
@@ -39,7 +37,9 @@ def generate_all_simulations(config: dict, genes: list) -> list:
 # ======================================================
 configfile: "config.yaml"
 
-CONDA_IMG = config["conda_img"]
+
+CONTAINERS = config["containers"]
+
 # ======================================================
 # Rules
 # ======================================================
@@ -53,19 +53,18 @@ files = set()
 for sim in all_simulations:
     sim_path = Path("analysis") / sim.get_directory()
 
-    files.add(
-        f"{sim_path}/evaluation/results.json"
-    )
-    files.add(
-        f"{sim_path}/evaluate_no_denovo/results.json"
-    )
+    files.add(f"{sim_path}/evaluation/results.json")
+    files.add(f"{sim_path}/evaluate_no_denovo/results.json")
 
 
 rule all:
-    input: files
+    input:
+        files,
 
 
 rules_dir = Path("rules/")
+
+
 include: str(rules_dir / "multiple_sequence_alignment.smk")
 include: str(rules_dir / "build_prg.smk")
 include: str(rules_dir / "random_path.smk")
