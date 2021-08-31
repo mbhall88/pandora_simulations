@@ -45,29 +45,8 @@ rule add_denovo_paths_to_msa:
         mem_mb=lambda wildcards, attempt: 500,
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/add_denovo_to_msa.log",
-    run:
-        gene_paths = list(Path(input.denovo_dir).glob(f"{wildcards.gene}.*.fa"))
-        new_msa_path = Path(output[0])
-
-        if not new_msa_path.parent.is_dir():
-            new_msa_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with new_msa_path.open("w") as fh_out:
-            original_msa = Path(input.msa)
-            fh_out.write(original_msa.read_text())
-
-            for p in gene_paths:
-                read_counter = 1
-
-                with p.open() as fasta:
-                    for line in fasta:
-                        if line.startswith(">"):
-                            fh_out.write(
-                                line.rstrip() + p.stem + f"_path{read_counter}\n"
-                            )
-                            read_counter += 1
-                        else:
-                            fh_out.write(line)
+    script:
+        "../scripts/add_denovo_paths_to_msa.py"
 
 
 rule run_msa_after_adding_denovo_paths:
