@@ -1,9 +1,7 @@
 rule get_random_paths_from_prg:
     input:
-        prg="data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
-        index=(
-            "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa.k15.w14.idx"
-        ),
+        prg=rules.index_initial_combined_prg.input[0],
+        index=rules.index_initial_combined_prg.output[0],
     output:
         "analysis/{max_nesting_lvl}/random_paths.fa",
     threads: 1
@@ -17,14 +15,14 @@ rule get_random_paths_from_prg:
         "logs/{max_nesting_lvl}/get_random_paths_from_prg.log",
     shell:
         """
-        pandora random_path {input.prg} {params.num_paths} &> {log}
+        pandora random {input.prg} {params.num_paths} &> {log}
         gzip -d random_paths.fa.gz && mv random_paths.fa {output} 2>> {log}
         """
 
 
 rule join_random_paths_into_single_reference_sequence:
     input:
-        "analysis/{max_nesting_lvl}/random_paths.fa",
+        rules.get_random_paths_from_prg.output[0],
     output:
         "analysis/{max_nesting_lvl}/combined_random_paths.fa",
     threads: 1
@@ -33,8 +31,6 @@ rule join_random_paths_into_single_reference_sequence:
     log:
         "logs/{max_nesting_lvl}/join_random_paths_into_single_reference_sequence.log",
     run:
-        from pathlib import Path
-
         with open(output[0], "w") as output_fh:
             header = ">combined_genome_of_genes "
             sequence = ""

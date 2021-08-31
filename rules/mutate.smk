@@ -1,6 +1,6 @@
 rule mutate_random_path:
     input:
-        "analysis/{max_nesting_lvl}/combined_random_paths.fa",
+        rules.join_random_paths_into_single_reference_sequence.output[0],
     output:
         sequences="analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated_1.fasta",
         vcf="analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated.vcf",
