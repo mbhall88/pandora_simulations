@@ -65,10 +65,10 @@ rule all:
 rules_dir = Path("rules/")
 
 
-include: str(rules_dir / "multiple_sequence_alignment.smk")
 include: str(rules_dir / "build_prg.smk")
 include: str(rules_dir / "random_path.smk")
 include: str(rules_dir / "mutate.smk")
 include: str(rules_dir / "simulate.smk")
+include: str(rules_dir / "discover.smk")
 include: str(rules_dir / "map.smk")
 include: str(rules_dir / "evaluate.smk")
