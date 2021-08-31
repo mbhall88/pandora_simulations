@@ -1,61 +1,47 @@
-rule map_with_discovery:
+from pathlib import Path
+
+
+rule pandora_discover:
     input:
-        prg="data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa",
-        index=(
-            "data/prgs/max_nesting_lvl_{max_nesting_lvl}/combined.prg.fa.k15.w14.idx"
-        ),
-        reads=(
-            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.fa"
-        ),
-        ref="analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated_1.fasta",
+        prg=rules.index_initial_combined_prg.input[0],
+        index=rules.index_initial_combined_prg.output[0],
+        reads=rules.subsample_reads.output.reads,
+        ref=rules.mutate_random_path.output.sequences,
     output:
-        directory(
-            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/denovo_paths"
+        denovo_dir=directory(
+            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/discover/denovo_paths"
         ),
-        consensus="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora.consensus.fq.gz",
-        genotype_vcf="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.vcf",
+        consensus="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/discover/pandora.consensus.fq.gz",
     threads: 8
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 4000,
     params:
-        outdir="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/",
+        outdir=lambda wildcards, output: Path(output.denovo_dir).parent,
+        opts=" ".join(["-v", "--discover-k", "{denovo_kmer_size}"]),
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery.log",
     container:
         CONTAINERS["pandora"]
+    shadow:
+        "shallow"
     shell:
         """
         genome_size=$(grep -v '>' {input.ref} | wc | awk '{{print $3-$1-10}}')
-        read_file=$(realpath {input.reads})
-        prg_file=$(realpath {input.prg})
-        log_file=$(realpath {log})
-        mkdir -p {params.outdir} 
-        cd {params.outdir} || exit 1
 
-        pandora map --prg_file $prg_file \
-            --read_file $read_file \
-            --outdir $(pwd) \
-            --output_kg \
+        pandora discover {params.opts} \
+            -o {params.outdir} \
             -t {threads} \
-            --output_covgs \
-            --max_covg {wildcards.coverage} \
-            --output_vcf \
-            --genotype \
-            --genome_size $genome_size \
-            --discover \
-            --denovo_kmer_size {wildcards.denovo_kmer_size} \
-            --log_level debug &> $log_file
+            -g $genome_size \
+            {input.prg} {input.reads} &> {log}
         """
 
 
 rule map_without_discovery:
     input:
-        prg="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa",
-        index="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa.k15.w14.idx",
-        reads=(
-            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/reads.simulated.fa"
-        ),
-        ref="analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated_1.fasta",
+        prg=rules.index_initial_combined_prg.input[0],
+        index=rules.index_initial_combined_prg.output[0],
+        reads=rules.subsample_reads.output.reads,
+        ref=rules.mutate_random_path.output.sequences,
     output:
         consensus="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/pandora.consensus.fq.gz",
         genotype_vcf="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/pandora_genotyped.vcf",
@@ -63,7 +49,8 @@ rule map_without_discovery:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 4000,
     params:
-        outdir="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/",
+        outdir=lambda wildcards, output: Path(output.genotype_vcf).parent,
+        opts=" ".join(["-v", "--genotype"]),
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery.log",
     container:
@@ -71,15 +58,40 @@ rule map_without_discovery:
     shell:
         """
         genome_size=$(grep -v '>' {input.ref} | wc | awk '{{print $3-$1-10}}')
-        pandora map --prg_file {input.prg} \
-            --read_file {input.reads} \
-            --outdir {params.outdir} \
-            --output_kg \
-            --output_covgs \
+
+        pandora map {params.opts} \
+            -o {params.outdir} \
             -t {threads} \
-            --max_covg {wildcards.coverage} \
-            --output_vcf \
-            --genotype \
-            --genome_size $genome_size \
-            --log_level debug &> {log}
+            -g $genome_size \
+            {input.prg} {input.reads} &> {log}
+        """
+
+
+rule map_with_discovery:
+    input:
+        prg=rules.index_combined_prg_after_adding_denovo_paths.input[0],
+        index=rules.index_combined_prg_after_adding_denovo_paths.output[0],
+        reads=rules.subsample_reads.output.reads,
+        ref=rules.mutate_random_path.output.sequences,
+    output:
+        consensus="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora.consensus.fq.gz",
+        genotype_vcf="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.vcf",
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+    params:
+        outdir=lambda wildcards, output: Path(output.genotype_vcf).parent,
+        opts=" ".join(["-v", "--genotype"]),
+    log:
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery.log",
+    container:
+        CONTAINERS["pandora"]
+    shell:
+        """
+        genome_size=$(grep -v '>' {input.ref} | wc | awk '{{print $3-$1-10}}')
+        pandora map {params.opts} \
+            -o {params.outdir} \
+            -t {threads} \
+            -g $genome_size \
+            {input.prg} {input.reads} &> {log}
         """

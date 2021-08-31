@@ -1,6 +1,9 @@
+from pathlib import Path
+
+
 rule add_denovo_paths_to_msa:
     input:
-        denovo_dir="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/denovo_paths",
+        denovo_dir=rules.pandora_discover.output.denovo_dir,
         msa="data/all_gene_alignments/{gene}_na_aln.fa.gz",
     output:
         "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.fa",
@@ -36,7 +39,7 @@ rule add_denovo_paths_to_msa:
 
 rule run_msa_after_adding_denovo_paths:
     input:
-        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.fa",
+        rules.add_denovo_paths_to_msa.output[0],
     output:
         msa="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.msa.fa",
     threads: 2
