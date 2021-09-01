@@ -52,7 +52,7 @@ rule add_denovo_paths_to_msa:
     params:
         script=SCRIPTS / "add_denovo_paths_to_msa.py",
         options="-v",
-        genes=",".join(genes_for_simulation)
+        genes=",".join(GENE_NAMES)
     shell:
         """
         python {params.script} {params.options} -o {output.msa_dir} --include {params.genes} \
@@ -72,7 +72,7 @@ rule build_prg_after_adding_denovo_paths:
         mem_mb=lambda wildcards, attempt: (16_000 + (attempt * 1000)) * attempt,
     params:
         opts=["-O", "p", "-N", "{max_nesting_lvl}"],
-        genes=",".join(genes_for_simulation)
+        genes=GENE_NAMES
     container:
         CONTAINERS["make_prg"]
     log:
