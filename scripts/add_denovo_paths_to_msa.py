@@ -57,6 +57,7 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
     env = os.environ
     env["TMPDIR"] = str(mafft_tmpdir)
 
+    input_is_compressed = msa.suffix == ".gz"
     args = " ".join(
         [
             "mafft",
@@ -65,26 +66,32 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
             "-1",
             "--add",
             new_sequence_shstr,
-            "-",
+            "-" if input_is_compressed else str(msa),
             ">",
             new_msa,
         ]
     )
     logging.debug(f"Running mafft with args: {args}")
 
-    if msa.suffix == ".gz":
+    if input_is_compressed:
         istream = gzip.open(msa, "rt")
+        process = subprocess.Popen(
+            args,
+            stdin=istream,
+            stderr=sys.stderr,
+            encoding="utf-8",
+            shell=True,
+            env=env,
+        )
     else:
-        istream = open(msa)
+        process = subprocess.Popen(
+            args,
+            stderr=sys.stderr,
+            encoding="utf-8",
+            shell=True,
+            env=env,
+        )
 
-    process = subprocess.Popen(
-        args,
-        stdin=istream,
-        stderr=sys.stderr,
-        encoding="utf-8",
-        shell=True,
-        env=env,
-    )
     exit_code = process.wait()
     shutil.rmtree(mafft_tmpdir)
     if exit_code != 0:
