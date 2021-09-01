@@ -4,6 +4,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 import uuid
 import gzip
 from collections import defaultdict
@@ -73,7 +74,7 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
     )
     process = subprocess.Popen(
         args,
-        stderr=subprocess.PIPE,
+        stderr=sys.stderr,
         encoding="utf-8",
         shell=True,
         env=env,
@@ -87,6 +88,12 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
         )
     logging.debug(f"Finished updating MSA for {name}")
     new_sequence_file.unlink(missing_ok=True)
+
+
+def copy_compressed_files(infile: Path, outfile: Path):
+    content = gzip.open(infile, "rt").read()
+    with open(outfile, "w") as f:
+        f.write(content)
 
 
 @click.command()
@@ -180,19 +187,25 @@ def main(
         f"{len(no_update_msas)} MSAs have no discovered sequences. Skipping MSA for "
         f"those..."
     )
+    if processes == 0:
+        logging.info(f"{processes} processed requested. Using all available...")
+        processes = None
 
+    jobs = []
     logging.info("Copying files that don't require update to outdir...")
     for name in no_update_msas:
         original_file = msa_lookup[name]
         new_file = outdir / f"{name}.fa"
         if original_file.suffix == ".gz":
-            content = gzip.open(original_file, "rt").read()
-            with open(new_file, "w") as f:
-                f.write(content)
+            jobs.append((original_file, new_file))
         else:
-            new_file = shutil.copy(str(original_file), str(outdir))
-        logging.debug(f"{original_file} copied to {new_file}")
-    logging.info("All files copied.")
+            new_file = shutil.copy(str(original_file), str(new_file))
+            logging.debug(f"{original_file} copied to {new_file}")
+
+    logging.info("Copying compressed files that don't require update to outdir...")
+    with Pool(processes=processes) as pool:
+        pool.starmap(copy_compressed_files, jobs)
+    logging.info("Successfully copied compressed files")
 
     jobs = []
     for name in to_update_msas:
@@ -200,9 +213,6 @@ def main(
         new_sequences = denovo_lookup[name]
         jobs.append((msa, new_sequences, outdir))
 
-    if processes == 0:
-        logging.info(f"{processes} processed requested. Using all available...")
-        processes = None
     with Pool(processes=processes) as pool:
         logging.info(f"Updating {len(jobs)} MSAs...")
         pool.starmap(update_with_new_sequences, jobs)
