@@ -202,10 +202,11 @@ def main(
             new_file = shutil.copy(str(original_file), str(new_file))
             logging.debug(f"{original_file} copied to {new_file}")
 
-    logging.info("Copying compressed files that don't require update to outdir...")
-    with Pool(processes=processes) as pool:
-        pool.starmap(copy_compressed_files, jobs)
-    logging.info("Successfully copied compressed files")
+    if jobs:
+        logging.info("Copying compressed files that don't require update to outdir...")
+        with Pool(processes=processes) as pool:
+            pool.starmap(copy_compressed_files, jobs)
+        logging.info("Successfully copied compressed files")
 
     jobs = []
     for name in to_update_msas:
