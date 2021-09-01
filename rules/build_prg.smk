@@ -1,9 +1,8 @@
 from pathlib import Path
 
-
 rule build_initial_prg:
     input:
-        "data/all_gene_alignments/{gene}_na_aln.fa.gz",
+        "data/all_gene_alignments/{gene}_na_aln.fa",
     output:
         prg="data/prgs/max_nesting_lvl_{max_nesting_lvl}/{gene}.prg",
     params:
