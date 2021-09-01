@@ -161,7 +161,7 @@ def main(
         format="%(asctime)s [%(levelname)s]: %(message)s", level=log_level
     )
     outdir = Path(outdir)
-    outdir.mkdir(exist_ok=True)
+    outdir.mkdir(exist_ok=True, parents=True)
 
     logging.info("Searching for MSAs...")
     msa_lookup: Dict[str, Path] = dict()
