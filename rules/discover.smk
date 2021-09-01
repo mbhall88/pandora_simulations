@@ -37,70 +37,62 @@ rule pandora_discover:
 rule add_denovo_paths_to_msa:
     input:
         denovo_dir=rules.pandora_discover.output.denovo_dir,
-        msa="data/all_gene_alignments/{gene}_na_aln.fa.gz",
+        msa_dir="data/all_gene_alignments/",
     output:
-        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.fa",
-    threads: 1
+        msa_dir=directory(
+            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/"
+        ),
+    threads: 16
     resources:
-        mem_mb=lambda wildcards, attempt: 500,
+        mem_mb=lambda wildcards, attempt: 16_000 * attempt,
     log:
-        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/add_denovo_to_msa.log",
-    script:
-        "../scripts/add_denovo_paths_to_msa.py"
-
-
-rule run_msa_after_adding_denovo_paths:
-    input:
-        rules.add_denovo_paths_to_msa.output[0],
-    output:
-        msa="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}/msa_with_denovo_paths.msa.fa",
-    threads: 2
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 1000,
-    container:
-        CONTAINERS["mafft"]
-    log:
-        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/run_msa_after_adding_denovo_paths.log",
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/add_denovo_to_msa.log",
+    conda:
+        "../envs/update_msas.yaml"
+    params:
+        script="../scripts/add_denovo_paths_to_msa.py",
+        options="",
     shell:
-        "mafft --auto --thread {threads} {input} > {output.msa} 2> {log}"
+        """
+        python {params.script} {params.options} -o {output.msa_dir} \
+            -j {threads} -M {input.msa_dir} {input.denovo_dir} 2> {log}
+        """
 
 
 rule build_prg_after_adding_denovo_paths:
     input:
-        rules.run_msa_after_adding_denovo_paths.output.msa,
+        rules.add_denovo_paths_to_msa.output.msa_dir,
     output:
-        prg="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/{gene}.prg",
-    threads: 1
+        outdir=directory(
+            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_prgs/"
+        ),
+    threads: 16
     resources:
-        mem_mb=lambda wildcards, attempt: (1000 + (attempt * 1000)) * attempt,
+        mem_mb=lambda wildcards, attempt: (16_000 + (attempt * 1000)) * attempt,
     params:
-        prg_name=lambda wildcards, output: Path(output.prg).with_suffix(""),
-        opts="-O p -N {max_nesting_lvl} -S {gene}",
+        opts=["-O", "p", "-N", "{max_nesting_lvl}"],
     container:
         CONTAINERS["make_prg"]
     log:
-        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/{gene}/build_prg_after_adding_denovo_paths.log",
-    shell:
-        "make_prg from_msa {params.opts} -n {params.prg_name} {input} 2> {log}"
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/build_prg_after_adding_denovo_paths.log",
+    script:
+        "../scripts/update_prgs.py"
 
 
 rule combine_prgs_after_adding_denovo_paths:
     input:
-        expand(
-            "analysis/{{max_nesting_lvl}}/{{num_snps}}/{{read_quality}}/{{coverage}}/{{denovo_kmer_size}}/map_with_discovery/updated_msas/{gene}.prg",
-            gene=GENE_NAMES,
-        ),
+        prg_dir=rules.build_prg_after_adding_denovo_paths.output.outdir,
     output:
-        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated_msas/combined.prg.fa",
+        "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/updated.prg.fa",
     threads: 1
     resources:
         mem_mb=lambda wildcards, attempt: 500,
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/combine_prgs_after_adding_denovo_paths.log",
+    conda:
+        "../envs/fd.yaml"
     shell:
-        """
-        awk 1 {input} > {output} 2> {log}
-        """
+        "fd -e prg -d 1 -X awk 1 \; . {input.prg_dir} > {output[0]} 2> {log}"
 
 
 rule index_combined_prg_after_adding_denovo_paths:
