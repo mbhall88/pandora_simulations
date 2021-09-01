@@ -51,7 +51,7 @@ rule add_denovo_paths_to_msa:
         "../envs/update_msas.yaml"
     params:
         script=SCRIPTS / "add_denovo_paths_to_msa.py",
-        options="",
+        options="-v",
     shell:
         """
         python {params.script} {params.options} -o {output.msa_dir} \
