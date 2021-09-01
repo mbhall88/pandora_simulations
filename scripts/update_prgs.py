@@ -6,7 +6,7 @@ from multiprocessing import Pool
 from pathlib import Path
 import logging
 
-opts = snakemake.params.get("params", [])
+opts = snakemake.params.get("opts", [])
 prg_name = (lambda wildcards, output: Path(output.prg).with_suffix(""),)
 msa_dir = Path(snakemake.input[0])
 outdir = Path(snakemake.output.outdir)
