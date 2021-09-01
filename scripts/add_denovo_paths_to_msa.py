@@ -47,7 +47,6 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
 
     # make paths shell-safe
     new_msa = shlex.quote(str(outdir / f"{name}.fa"))
-    existing_msa = shlex.quote(str(msa))
     new_sequence_shstr = shlex.quote(str(new_sequence_file))
 
     # have run into issues on noah with scratch being full
@@ -66,14 +65,21 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
             "-1",
             "--add",
             new_sequence_shstr,
-            existing_msa,
+            "-",
             ">",
             new_msa,
         ]
     )
     logging.debug(f"Running mafft with args: {args}")
+
+    if msa.suffix == ".gz":
+        istream = gzip.open(msa, "rt")
+    else:
+        istream = open(msa)
+
     process = subprocess.Popen(
         args,
+        stdin=istream,
         stderr=sys.stderr,
         encoding="utf-8",
         shell=True,
@@ -82,9 +88,7 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
     exit_code = process.wait()
     shutil.rmtree(mafft_tmpdir)
     if exit_code != 0:
-        raise MafftError(
-            f"Failed to execute mafft for {name} - check the logs"
-        )
+        raise MafftError(f"Failed to execute mafft for {name} - check the logs")
     logging.debug(f"Finished updating MSA for {name}")
     new_sequence_file.unlink(missing_ok=True)
 
