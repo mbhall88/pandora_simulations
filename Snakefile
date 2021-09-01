@@ -51,7 +51,9 @@ SCRIPTS = Path("scripts").resolve()
 # Rules
 # ======================================================
 exclude_genes = {"GC00000393_5"}
-genes_for_simulation = pick_genes_for_simulation(config["num_genes"])
+genes_for_simulation = pick_genes_for_simulation(
+    config["num_genes"], exclude=exclude_genes
+)
 GENE_NAMES = [extract_gene_name(gene.name) for gene in genes_for_simulation]
 all_simulations = generate_all_simulations(
     config, [extract_gene_name(gene.name) for gene in genes_for_simulation]
