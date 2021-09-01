@@ -61,7 +61,6 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
     args = " ".join(
         [
             "mafft",
-            "--quiet",
             "--auto",
             "--thread",
             "-1",
@@ -72,6 +71,7 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
             new_msa,
         ]
     )
+    logging.debug(f"Running mafft with args: {args}")
     process = subprocess.Popen(
         args,
         stderr=sys.stderr,
