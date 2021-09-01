@@ -12,11 +12,13 @@ def extract_gene_name(string: str) -> str:
 def pick_genes_for_simulation(num: int, exclude: set = None) -> list:
     if exclude is None:
         exclude = set()
-    all_genes = [
-        p
-        for p in Path("data/all_gene_alignments").rglob("*.fa.gz")
-        if p.name.split("_na_")[0] not in exclude
-    ]
+    all_genes = sorted(
+        [
+            p
+            for p in Path("data/all_gene_alignments").glob("*.fa")
+            if extract_gene_name(p.name) not in exclude
+        ]
+    )
     random.seed(88)
     return random.sample(all_genes, num)
 
