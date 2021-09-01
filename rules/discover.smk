@@ -50,7 +50,7 @@ rule add_denovo_paths_to_msa:
     conda:
         "../envs/update_msas.yaml"
     params:
-        script="../scripts/add_denovo_paths_to_msa.py",
+        script=SCRIPTS / "add_denovo_paths_to_msa.py",
         options="",
     shell:
         """
@@ -76,7 +76,7 @@ rule build_prg_after_adding_denovo_paths:
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/build_prg_after_adding_denovo_paths.log",
     script:
-        "../scripts/update_prgs.py"
+        str(SCRIPTS / "update_prgs.py")
 
 
 rule combine_prgs_after_adding_denovo_paths:

@@ -39,6 +39,7 @@ configfile: "config.yaml"
 
 
 CONTAINERS = config["containers"]
+SCRIPTS / Path("scripts").resolve()
 
 # ======================================================
 # Rules
