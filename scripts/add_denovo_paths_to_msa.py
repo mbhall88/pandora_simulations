@@ -142,6 +142,7 @@ def copy_compressed_files(infile: Path, outfile: Path):
     default=1,
     show_default=True,
 )
+@click.option("--include", help="Genes to include. If not given. all will be used")
 @click.option("-v", "--verbose", help="Turns on debug-level logging.", is_flag=True)
 def main(
     indirs: Tuple[str],
@@ -150,6 +151,7 @@ def main(
     verbose: bool,
     extensions: Tuple[str],
     processes: int,
+    include: str,
 ):
     """A script to update multiple sequence alignments (MSAs) with newly discovered
     sequences (de novo paths).
@@ -160,6 +162,7 @@ def main(
     INDIRS: Any number of directories containing fasta files with the new sequences to
     add.
     """
+    include_genes = set(include.split(","))
     log_level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
         format="%(asctime)s [%(levelname)s]: %(message)s", level=log_level
@@ -172,6 +175,8 @@ def main(
     for file in Path(msa_dir).rglob("*"):
         if any(ext in extensions for ext in file.suffixes):
             name = extract_name_from_path(file)
+            if name not in include_genes:
+                continue
             msa_lookup[name] = file
     logging.info(f"Found {len(msa_lookup)} MSA files.")
 
@@ -181,6 +186,8 @@ def main(
         for file in Path(directory).rglob("*"):
             if any(ext in extensions for ext in file.suffixes):
                 name = file.name.split(".")[0]
+                if name not in include_genes:
+                    continue
                 denovo_lookup[name].append(file)
     logging.info(f"{len(denovo_lookup)} MSAs have discovered sequence files.")
 

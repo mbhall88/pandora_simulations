@@ -21,6 +21,7 @@ else:
 class MakePrgError(Exception):
     pass
 
+include_genes = set(snakemake.params.genes)
 
 def update_prgs(msa: Path, output: Path, gene: str):
     logging.debug(f"Updating PRG for {gene}...")
@@ -43,6 +44,8 @@ def update_prgs(msa: Path, output: Path, gene: str):
 jobs = []
 for msa in msa_dir.glob("*.fa"):
     gene = msa.name.split(".")[0]
+    if gene not in include_genes:
+        continue
     prg_file = outdir / f"{gene}.prg"
     jobs.append((msa, prg_file, gene))
 
