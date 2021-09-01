@@ -83,8 +83,7 @@ def update_with_new_sequences(msa: Path, new_sequences: List[Path], outdir: Path
     shutil.rmtree(mafft_tmpdir)
     if exit_code != 0:
         raise MafftError(
-            f"Failed to execute mafft for {name} due to the following error:\n"
-            f"{process.stderr.read()}"
+            f"Failed to execute mafft for {name} - check the logs"
         )
     logging.debug(f"Finished updating MSA for {name}")
     new_sequence_file.unlink(missing_ok=True)
