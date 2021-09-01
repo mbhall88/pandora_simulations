@@ -1,5 +1,5 @@
 containers:
-  make_prg: "docker://quay.io/mbhall88/make_prg:f69e08d"
+  make_prg: "docker://quay.io/mbhall88/make_prg:8afb755"
   pandora: "docker://quay.io/rmcolq/pandora:0.8.0"
   mafft: "docker://quay.io/biocontainers/mafft:7.475--h516909a_0"
   rasusa: "docker://quay.io/mbhall88/rasusa:0.6.0"
