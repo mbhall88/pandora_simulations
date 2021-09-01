@@ -9,8 +9,14 @@ def extract_gene_name(string: str) -> str:
     return string.split("_na_")[0]
 
 
-def pick_genes_for_simulation(num: int) -> list:
-    all_genes = list(Path("data/all_gene_alignments").rglob("*.fa.gz"))
+def pick_genes_for_simulation(num: int, exclude: set = None) -> list:
+    if exclude is None:
+        exclude = set()
+    all_genes = [
+        p
+        for p in Path("data/all_gene_alignments").rglob("*.fa.gz")
+        if p.name.split("_na_")[0] not in exclude
+    ]
     random.seed(88)
     return random.sample(all_genes, num)
 
@@ -44,6 +50,7 @@ SCRIPTS = Path("scripts").resolve()
 # ======================================================
 # Rules
 # ======================================================
+exclude_genes = {"GC00000393_5"}
 genes_for_simulation = pick_genes_for_simulation(config["num_genes"])
 GENE_NAMES = [extract_gene_name(gene.name) for gene in genes_for_simulation]
 all_simulations = generate_all_simulations(
