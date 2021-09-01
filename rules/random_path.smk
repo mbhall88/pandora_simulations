@@ -13,9 +13,11 @@ rule get_random_paths_from_prg:
         CONTAINERS["pandora"]
     log:
         "logs/{max_nesting_lvl}/get_random_paths_from_prg.log",
+    shadow:
+        "shallow"
     shell:
         """
-        pandora random {input.prg} {params.num_paths} &> {log}
+        pandora random {input.prg} -n {params.num_paths} &> {log}
         gzip -d random_paths.fa.gz && mv random_paths.fa {output} 2>> {log}
         """
 
