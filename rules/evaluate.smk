@@ -40,9 +40,9 @@ rule evaluate_no_denovo:
 rule norm_truth_vcf:
     input:
         truth_vcf=rules.evaluate.input.reference_vcf,
-        truth_idx=rules.index_random_path.output[0],
+        truth_idx=rules.index_mutated_path.output[0],
         truth_ref=rules.join_random_paths_into_single_reference_sequence.output[0],
-        ref=rules.get_random_paths_from_prg.output[0]
+        ref=rules.get_random_paths_from_prg.output[0],
     output:
         truth_vcf="analysis/{max_nesting_lvl}/{num_snps}/truth.vcf",
     log:
@@ -50,12 +50,33 @@ rule norm_truth_vcf:
     script:
         "../scripts/norm_truth_vcf.py"
 
+
+rule norm_pandora_vcf:
+    input:
+        vcf=rules.map_with_discovery.output.genotype_vcf,
+        ref=rules.index_random_path.input[0],
+        ref_idx=rules.index_random_path.output[0],
+    output:
+        vcf="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.norm.vcf",
+    resources:
+        mem_mb=int(0.5 * GB),
+    log:
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/norm_pandora_vcf.log",
+    container:
+        CONTAINERS["bcftools"]
+    shell:
+        """
+        ( bcftools view -a -f .,PASS {input.vcf} \
+          | bcftools norm -o {output.vcf} -f {input.ref} ) 2> {log}
+        """
+
+
 rule happy_eval:
     input:
         truth_vcf=rules.norm_truth_vcf.output.truth_vcf,
-        query_vcf=rules.evaluate.input.query_vcf,
-        ref=rules.index_random_path.input[0],
-        ref_idx=rules.index_random_path.output[0],
+        query_vcf=rules.norm_pandora_vcf.output.vcf,
+        ref=rules.index_mutated_path.input[0],
+        ref_idx=rules.index_mutated_path.output[0],
     output:
         summary=(
             "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/happy/results.summary.csv"

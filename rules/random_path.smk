@@ -21,6 +21,15 @@ rule get_random_paths_from_prg:
         gzip -d random_paths.fa.gz && mv random_paths.fa {output} 2>> {log}
         """
 
+rule index_random_path:
+    input:
+        rules.get_random_paths_from_prg.output[0],
+    output:
+        "analysis/{max_nesting_lvl}/random_paths.fa.fai",
+    params:
+        "-f" # optional params string
+    wrapper:
+        "0.77.0/bio/samtools/faidx"
 
 rule join_random_paths_into_single_reference_sequence:
     input:

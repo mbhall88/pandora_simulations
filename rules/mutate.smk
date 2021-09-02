@@ -35,7 +35,7 @@ rule mutate_random_path:
             $input 2> $log
         """
 
-rule index_random_path:
+rule index_mutated_path:
     input:
         rules.mutate_random_path.output.sequences,
     output:
