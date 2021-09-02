@@ -28,7 +28,7 @@ rule map_without_discovery:
 
         pandora map {params.opts} \
             -o {params.outdir} \
-            --vcf-ref {input.vcf_ref} \
+            --vcf-refs {input.vcf_ref} \
             -t {threads} \
             -g $genome_size \
             {input.prg} {input.reads} &> {log}
@@ -62,6 +62,6 @@ rule map_with_discovery:
             -o {params.outdir} \
             -t {threads} \
             -g $genome_size \
-            --vcf-ref {input.vcf_ref} \
+            --vcf-refs {input.vcf_ref} \
             {input.prg} {input.reads} &> {log}
         """
