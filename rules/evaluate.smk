@@ -48,9 +48,9 @@ rule fix_truth_vcf_chrom:
     container:
         CONTAINERS["happy"]
     shell:
-        """
+        r"""
         chrom=$(cut -f1 {input.ref_idx})
-        ( sed -r "s/(^##ref.+)/\1\n##contig=<ID=$chrom>/" combined_random_paths_mutated.vcf | sed "s/^1/$chrom/" | bcftools view -O b ) > {output.vcf} 2> {log}
+        ( sed -r "s/(^##ref.+)/\1\n##contig=<ID=$chrom>/" {input.truth_vcf} | sed "s/^1/$chrom/" | bcftools view -O b ) > {output.vcf} 2> {log}
         """
 
 
