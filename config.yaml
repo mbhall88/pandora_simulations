@@ -4,7 +4,7 @@ containers:
   mafft:    "docker://quay.io/biocontainers/mafft:7.475--h516909a_0"
   rasusa:   "docker://quay.io/mbhall88/rasusa:0.6.0"
   happy:    "docker://quay.io/biocontainers/hap.py:0.3.14--py27h5c5a3ab_0"
-  bcftools: "docker://quay.io/biocontainers/bcftools:1.11--h7c999a4_0"
+  bcftools: "docker://quay.io/biocontainers/bcftools:1.13--h3a49de5_0"
 num_genes:             100
 num_reads_to_simulate: 30000
 prg_nesting_lvls:
