@@ -8,6 +8,7 @@ rule map_without_discovery:
         index=rules.index_initial_combined_prg.output[0],
         reads=rules.subsample_reads.output.reads,
         ref=rules.mutate_random_path.output.sequences,
+        vcf_ref=rules.get_random_paths_from_prg.output[0],
     output:
         consensus="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/pandora.consensus.fq.gz",
         genotype_vcf="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_without_discovery/pandora_genotyped.vcf",
@@ -27,6 +28,7 @@ rule map_without_discovery:
 
         pandora map {params.opts} \
             -o {params.outdir} \
+            --vcf-ref {input.vcf_ref} \
             -t {threads} \
             -g $genome_size \
             {input.prg} {input.reads} &> {log}
@@ -39,6 +41,7 @@ rule map_with_discovery:
         index=rules.index_combined_prg_after_adding_denovo_paths.output[0],
         reads=rules.subsample_reads.output.reads,
         ref=rules.mutate_random_path.output.sequences,
+        vcf_ref=rules.get_random_paths_from_prg.output[0],
     output:
         consensus="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora.consensus.fq.gz",
         genotype_vcf="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.vcf",
@@ -59,5 +62,6 @@ rule map_with_discovery:
             -o {params.outdir} \
             -t {threads} \
             -g $genome_size \
+            --vcf-ref {input.vcf_ref} \
             {input.prg} {input.reads} &> {log}
         """

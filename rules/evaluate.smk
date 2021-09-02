@@ -37,26 +37,22 @@ rule evaluate_no_denovo:
         "../scripts/evaluate.py"
 
 
-rule fix_truth_vcf_chrom:
+rule norm_truth_vcf:
     input:
         truth_vcf=rules.evaluate.input.reference_vcf,
-        ref_idx=rules.index_random_path.output[0],
+        truth_idx=rules.index_random_path.output[0],
+        truth_ref=rules.join_random_paths_into_single_reference_sequence.output[0],
+        ref=rules.get_random_paths_from_prg.output[0]
     output:
-        vcf="analysis/{max_nesting_lvl}/{num_snps}/truth.bcf",
+        truth_vcf="analysis/{max_nesting_lvl}/{num_snps}/truth.vcf",
     log:
         "logs/{max_nesting_lvl}/{num_snps}/fix_truth_vcf_chrom.log",
-    container:
-        CONTAINERS["happy"]
-    shell:
-        r"""
-        chrom=$(cut -f1 {input.ref_idx})
-        ( sed -r "s/(^##ref.+)/\1\n##contig=<ID=$chrom>/" {input.truth_vcf} | sed "s/^1/$chrom/" | bcftools view -O b ) > {output.vcf} 2> {log}
-        """
-
+    script:
+        "scripts/norm_truth_vcf.py"
 
 rule happy_eval:
     input:
-        truth_vcf=rules.fix_truth_vcf_chrom.output.vcf,
+        truth_vcf=rules.norm_truth_vcf.output.truth_vcf,
         query_vcf=rules.evaluate.input.query_vcf,
         ref=rules.index_random_path.input[0],
         ref_idx=rules.index_random_path.output[0],

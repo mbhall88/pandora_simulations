@@ -39,8 +39,13 @@ rule join_random_paths_into_single_reference_sequence:
 
             for input_path in input:
                 with open(input_path) as input_fh:
+                    length = 0
                     for line in input_fh:
                         if not line.startswith(">"):
                             sequence += line.rstrip()
+                            length += len(line.rstrip())
+                        else:
+                            name = line[1:].split()[0]
+                    header += f"name={name};len={length} "
 
             output_fh.write(f"{header}\n{sequence}\n")
