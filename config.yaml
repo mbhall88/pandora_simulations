@@ -1,8 +1,9 @@
 containers:
   make_prg: "docker://quay.io/mbhall88/make_prg:29403da"
-  pandora: "docker://quay.io/rmcolq/pandora:0.8.0"
-  mafft: "docker://quay.io/biocontainers/mafft:7.475--h516909a_0"
-  rasusa: "docker://quay.io/mbhall88/rasusa:0.6.0"
+  pandora:  "docker://quay.io/rmcolq/pandora:0.8.0"
+  mafft:    "docker://quay.io/biocontainers/mafft:7.475--h516909a_0"
+  rasusa:   "docker://quay.io/mbhall88/rasusa:0.6.0"
+  happy:    "docker://quay.io/biocontainers/hap.py:0.3.14--py27h5c5a3ab_0"
 num_genes:             100
 num_reads_to_simulate: 30000
 prg_nesting_lvls:
