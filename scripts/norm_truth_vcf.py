@@ -10,6 +10,7 @@ truth_ref = snakemake.input.truth_ref
 
 with open(truth_faidx) as f:
     CHROM, length = next(f).split("\t")[:2]
+    length = int(length)
     vcf_contig_header = f"##contig=<ID={CHROM},length={length}>"
 
 pos_idx = dict()
