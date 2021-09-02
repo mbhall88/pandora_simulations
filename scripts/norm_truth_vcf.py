@@ -33,6 +33,7 @@ with open(in_truth_vcf) as fin, open(out_truth_vcf, "w") as fout:
             for gene, iv in pos_idx.items():
                 print(f"##contig=<ID={gene},length={iv[-1]-iv[0]}>", file=fout)
             written_extra = True
+            fout.write(line)
         elif line[0] != "#":
             cols = line.split("\t")
             pos = int(cols[1]) - 1
