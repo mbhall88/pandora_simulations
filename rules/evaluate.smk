@@ -37,9 +37,26 @@ rule evaluate_no_denovo:
         "../scripts/evaluate.py"
 
 
-rule happy_eval:
+rule fix_truth_vcf_chrom:
     input:
         truth_vcf=rules.evaluate.input.reference_vcf,
+        ref_idx=rules.index_random_path.output[0],
+    output:
+        vcf="analysis/{max_nesting_lvl}/{num_snps}/truth.bcf",
+    log:
+        "logs/{max_nesting_lvl}/{num_snps}/fix_truth_vcf_chrom.log",
+    container:
+        CONTAINERS["happy"]
+    shell:
+        """
+        chrom=$(cut -f1 {input.ref_idx})
+        ( sed -r "s/(^##ref.+)/\1\n##contig=<ID=$chrom>/" combined_random_paths_mutated.vcf | sed "s/^1/$chrom/" | bcftools view -O b ) > {output.vcf} 2> {log}
+        """
+
+
+rule happy_eval:
+    input:
+        truth_vcf=rules.fix_truth_vcf_chrom.output.vcf,
         query_vcf=rules.evaluate.input.query_vcf,
         ref=rules.index_random_path.input[0],
         ref_idx=rules.index_random_path.output[0],
