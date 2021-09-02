@@ -48,7 +48,7 @@ rule happy_eval:
             "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/happy/results.summary.csv"
         ),
     resources:
-        mem_mb=lambda wildcards, attempt: int(GB) * attempt,
+        mem_mb=lambda wildcards, attempt: int(1_024) * attempt,
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/happy_eval.log",
     container:
