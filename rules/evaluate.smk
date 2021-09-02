@@ -48,7 +48,7 @@ rule norm_truth_vcf:
     log:
         "logs/{max_nesting_lvl}/{num_snps}/fix_truth_vcf_chrom.log",
     script:
-        "scripts/norm_truth_vcf.py"
+        "../scripts/norm_truth_vcf.py"
 
 rule happy_eval:
     input:
