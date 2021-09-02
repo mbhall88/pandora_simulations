@@ -16,9 +16,9 @@ rule get_random_paths_from_prg:
     shadow:
         "shallow"
     shell:
-        """
+        r"""
         pandora random {input.prg} -n {params.num_paths} &> {log}
-        gzip -d random_paths.fa.gz && mv random_paths.fa {output} 2>> {log}
+        ( gzip -d -c random_paths.fa.gz | sed -r "s/^(>.+)_0$/\1/" ) > {output} 2>> {log}
         """
 
 rule index_random_path:
