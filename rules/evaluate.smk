@@ -59,7 +59,7 @@ rule norm_pandora_vcf:
     output:
         vcf="analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery/pandora_genotyped.norm.vcf",
     resources:
-        mem_mb=int(0.5 * GB),
+        mem_mb=int(0.5 * 1_000),
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/norm_pandora_vcf.log",
     container:
