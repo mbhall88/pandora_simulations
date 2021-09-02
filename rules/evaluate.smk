@@ -75,8 +75,8 @@ rule happy_eval:
     input:
         truth_vcf=rules.norm_truth_vcf.output.truth_vcf,
         query_vcf=rules.norm_pandora_vcf.output.vcf,
-        ref=rules.index_mutated_path.input[0],
-        ref_idx=rules.index_mutated_path.output[0],
+        ref=rules.index_random_path.input[0],
+        ref_idx=rules.index_random_path.output[0],
     output:
         summary=(
             "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/happy/results.summary.csv"
