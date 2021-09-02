@@ -34,3 +34,13 @@ rule mutate_random_path:
             --vcf $vcf \
             $input 2> $log
         """
+
+rule index_random_path:
+    input:
+        rules.mutate_random_path.output.sequences,
+    output:
+        "analysis/{max_nesting_lvl}/{num_snps}/combined_random_paths_mutated_1.fasta.fai",
+    params:
+        "-f" # optional params string
+    wrapper:
+        "0.77.0/bio/samtools/faidx"
