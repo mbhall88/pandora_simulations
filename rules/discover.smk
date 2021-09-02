@@ -17,7 +17,7 @@ rule pandora_discover:
         outdir=lambda wildcards, output: Path(output.denovo_dir).parent,
         opts=" ".join(["-v", "--discover-k", "{denovo_kmer_size}"]),
     log:
-        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/map_with_discovery.log",
+        "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/pandora_discover.log",
     container:
         CONTAINERS["pandora"]
     shadow:
