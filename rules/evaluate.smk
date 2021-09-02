@@ -66,7 +66,7 @@ rule norm_pandora_vcf:
         CONTAINERS["bcftools"]
     shell:
         """
-        ( bcftools view -a -f .,PASS -g ^miss {input.vcf} \
+        ( bcftools view -a -f .,PASS -i 'GT="alt"' {input.vcf} \
           | bcftools norm -a -o {output.vcf} -f {input.ref} ) 2> {log}
         """
 
