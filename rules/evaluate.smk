@@ -78,19 +78,21 @@ rule happy_eval:
         ref=rules.index_random_path.input[0],
         ref_idx=rules.index_random_path.output[0],
     output:
-        multiext(
-            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/happy/results",
-            ".summary.csv",
-            ".vcf.gz",
+        summary=(
+            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/happy/results.summary.csv"
+        ),
+        vcf=(
+            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/happy/results.vcf.gz",
         ),
     resources:
-        mem_mb=lambda wildcards, attempt: int(1_024) * attempt,
+        mem_mb=lambda wildcards, attempt: int(1_024 * 4) * attempt,
     log:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/happy_eval.log",
     container:
         CONTAINERS["happy"]
     shadow:
         "shallow"
+    threads: 4
     params:
         opts=" ".join(
             (
@@ -110,7 +112,7 @@ rule happy_eval:
         if [ "$truth_count" -eq 0 ] || [ "$query_count" -eq 0 ]; then
           printf 'TP,FN,FP\n0,%d,%d\n' "$truth_count" "$query_count" > {output.summary} 2> {log}
         else
-          hap.py {params.opts} -o {params.prefix} -r {input.ref} \
+          hap.py {params.opts} -o {params.prefix} -r {input.ref} --threads {threads} \
             {input.truth_vcf} {input.query_vcf} 2> {log}
         fi
         """
