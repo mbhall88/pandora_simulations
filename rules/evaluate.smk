@@ -78,8 +78,10 @@ rule happy_eval:
         ref=rules.index_random_path.input[0],
         ref_idx=rules.index_random_path.output[0],
     output:
-        summary=(
-            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/happy/results.summary.csv"
+        multiext(
+            "analysis/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/evaluation/happy/results",
+            ".summary.csv",
+            ".vcf.gz",
         ),
     resources:
         mem_mb=lambda wildcards, attempt: int(1_024) * attempt,
@@ -87,6 +89,8 @@ rule happy_eval:
         "logs/{max_nesting_lvl}/{num_snps}/{read_quality}/{coverage}/{denovo_kmer_size}/happy_eval.log",
     container:
         CONTAINERS["happy"]
+    shadow:
+        "shallow"
     params:
         opts=" ".join(
             (
